@@ -8,6 +8,62 @@ function fn(a, b) {
 setTimeout(fn, 5000, 'a', 'b', 'c', 'd')
 ```
 ---
+- window.performance.now() 不受系统时间影响
+- script执行
+    1. 内部， script 标签中的代码没有完成前，页面的其余内容不会被加载，也不会显示； 
+    2. 外部
+    - 在解释外部javascript文件的时候，页面也会阻塞，阻塞时间包括加载时间
+    - async 属性，可以立即下载脚本，但不阻塞其他页面执行， 多个 async，不能保证执行顺序，区别于defer
+    - defer 立即下载，但延迟到文档完全解析和显示后再执行
+    - 其他按照页面书写顺序解释
+    - 在里面加行内代码会被忽略
+    3. 需要动态加载的script外部脚本，比如在js中创建一个 script标签添加src属性。会影响性能，可以再文档头部， `<link rel="preload" href="想加载文件的路径">`
+    4. 以下两种会显示，noscript 标签中的内容，其他不会渲染其中的内容，noscript 标签中可包含其他标签，比如 p
+    - 浏览器不支持脚本
+    - 浏览器对脚本的支持被关闭
+    5. 即使是字符串在 script 标签也不可以直接写， `</script>`，必须转义 **<\/script>** 才行
+    6. 一个script标签为一个宏任务, 先执行第一个宏任务，也就是第一个script标签，然后依次去塞，先进先出
+    - 执行顺序`同步代码执行结束 - 微任务执行结束 - 宏任务`
+    
+```
+    1 9 8 3 4 6 2 5 7
+    <script>
+        console.log(1);
+        Promise.resolve(8).then((val) => {
+            console.log(val)
+        })
+        console.log(9)
+        setTimeout(() => {
+            console.log(2)
+        }, 0)
+        setTimeout(() => {
+            console.log(7)
+        }, 5000)
+        Promise.resolve(3).then((val) => {
+            console.log(val)
+        })
+    </script>
+    <script>
+        console.log(4);
+        setTimeout(() => {
+            console.log(5)
+        }, 0)
+        Promise.resolve(6).then((val) => {
+            console.log(val)
+        })
+    </script>
+```
+- 页面渲染时机
+    1. 第一次，dom树和css树加载完毕
+    2. 后面，在微任务执行结束, 去取宏任务的间隙
+
+---
+## 变量
+ - 在解析代码时，Javascript引擎也会注意到块后面的 let/const 声明，在声明之前不可以引用，声明前使用的执行瞬间叫**暂时性死区**
+ - var 的变量会成为 window 对象的属性， let 不会
+ - let 是块级作用域，所以可以在不同的script块声明
+
+---
 # Promise
 1. new Promise() 不可以，必须提供一个处理函数，哪怕是空函数 new Promise(()=>{})
 2. Promise 的状态一旦改变，后面都会改变
