@@ -10,6 +10,10 @@ export const asyncCompose = (...fncs) => async(...args) => {
     return result
 }
 
+export const asyncCompose2 = (...fnc) {
+    return x => fns.reduce((promise, fn) => promise.then(fn), Promise.resolve(x))
+}
+
 // 合成
 export const compose = (...fncs) => (...args) => {
     const [action, ...fncList] = fncs

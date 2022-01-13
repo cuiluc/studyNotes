@@ -17,6 +17,11 @@
 >这是崔璐说的名言哦
 这是一段会被**加粗**的文字
 
+> 添加分割线
+---
+或者
+***
+
   <www.baidu.com>
 
 [百度](http://www.baidu.com)
@@ -53,4 +58,4 @@
 
 
 ###效果图
-![效果图](./images/md-preview.png)
+![效果图](../images/md-preview.png)
