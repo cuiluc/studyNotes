@@ -185,6 +185,68 @@ let p2 = Promise.all([1, 2, 3])
 2. 进度追踪
     - [代码](../js/PromiseProgressHandler.js)
 
+## 异步函数
+1. async
+- async 包装函数后，期待一个实现thenable的对象，所以可以直接返回一个promise; 如果不是会将函数的返回值，没有return 则为 undefined ，用 Promise.resolve() 包装为一个期约对象，后面可以用then获取到返回值
+```
+const thenable = {
+    then(callback) {
+        callback(123)
+    }
+}
+```
+- throw 或者 return reject 用 promise.reject对应的处理函数接受
+- async声明一个异步函数，并且始终返回一个期约对象；但是其中的内容是同步的， 只是 then 中提供的函数是微任务
+```
+const fn = async function(){ return 1; }
+fn().then(console.log)
+```
+2. await
+- await 期待一个实现thenable的对象, 如果不是会被当做一个已经解决的期约（相当于用 Promise.resolve包装），然后再 “解包”
+- 如果 await 的值被reject了，那么await之后的代码不会被执行；但是可以相对应的使用 catch 捕获异常
+- await可以调用普通函数，并把普通函数的值作为最终的值
+3. 注意
+- async/await 中真正起作用的是 await
+```
+async function fn1() {
+    console.log(await Promise.resolve(1))
+}
+async function fn2() {
+    console.log(await 2)
+}
+async function fn3() {
+    console.log(3)
+}
+fn1()
+fn2()
+fn3()
+// 3 1 2
+```
+- 被 async 包装的异步函数中，await 之后的代码会被当做微任务, 等同步代码执行后，继续执行
+```
+async function fn1() {
+    console.log(2)
+    await null
+    console.log(4)
+}
+console.log(1)
+fn1()
+console.log(3)
+// 1, 2, 3, 4
+```
+- await 实际执行的是的一个then, 对于返回promise的函数，可以先调用后，用 await 注册求值， 如
+    - 这种方法可以先注册期约，不依次执行期约，只依次接受resolve， 平行执行函数
+    - 直接 await fn(), await fn2() 相当于串行
+```
+function fn () { return promise}; 
+function fn2 () { return promise}; 
+const a = fn();
+const b = fn2();
+await a;
+await b;
+```
+- async/await 可以在for循环使用，会依次调用的
+
 
 ## 注意
 1. 同步代码先执行， 执行 promise 本身会直接执行，相当于同步代码，只是 resolve 和 reject 调用时， 会排期，等同步代码执行后执行
@@ -200,3 +262,71 @@ p1.then(()=> console.log(2))
 ```
 Promise.reject(Error('foo)).catch(e => console.log(e))
 ```
+6. promise本身是同步的，只有then中的处理函数是微任务
+7. 调用栈
+- promise 会保存完整的调用栈，错误信息， handlerReject 的信息也会保存，占用内存
+- async await 不会保存 handlerReject，更准确的显示调用，不占内存
+```
+function handlerReject(resolve, reject) {
+    setTimeout(reject, 1000, 'bar')
+}
+
+function foo() {
+    new Promise(handlerReject)
+}
+foo()
+```
+
+
+## 注意： 传递函数 和 函数调用，传递的函数可以抽离，注意API传递的参数即可
+
+---
+---
+# BOM
+## window
+- window两个身份，Global对象 + 浏览器窗口的 Javascript 接口
+- let 和 const 声明的变量不会挂在 window 上，var 会
+- 如下
+```
+// b 未声明，会报错
+let a = b
+// 这种不会报错
+let a = window.b
+```
+- window.top / window.self 始终指向最上层，即window
+- 最上层(window)的parent还是window
+- window.screeLeft 和 window.screeTop 浏览器窗口，相对于电脑屏幕的位置，返回为css像素
+- moveTo && moveBy， 必须用 window.open 打开新窗口，并用参数接收
+```
+myWindow = window.open('', '', 'width=200,height=100');
+myWindow.document.write("<p>这是我的窗口</p>");
+// 必须是window.open打开的窗口，移动到指定位置，x, y
+myWindow.moveTo(0, 0);
+myWindow.focus();
+// 向两个方向移动的距离
+myWindow.moveBy(0, 0);
+```
+- 像素比 window.devicePixelRatio 物理像素与逻辑像素的缩放系数
+比如手机物理像素 1920\*1080但像素点特别小，需要降低为比较低的逻辑像素点，如 640\*320  window.devicePixelRatio就是3， 12css像素实际上是36像素物理像素
+- 窗口大小
+1. outerHeight / outerWidth 返回浏览器当前自身大小，缩小浏览器值会变化，在 frame 用一样
+2. 浏览器窗口中页面视口大小
+    - innerHeight / innerWidth 是不是一个数值
+    - 不是数值
+        - document.compatMode === "CSS1Compat" 检查页面处于标准模式
+            - 是， document.documentElement.clientHeight / document.documentElement.clientWeight， 手机缩放时候，值会变
+            - 不是， document.body.clientHeight / document.body.clientWeight， 缩放时候，值会变
+3. resizeBy && resizeTo, 必须要 myWinsow =  window.open
+    - myWinsow.resizeTo(100, 50) 缩放到 100 * 50
+    - myWinsow.resizeBy(50, 50) 缩放到 150 * 100 累加
+- 视口位置
+1. 视口滚动距离 window.pageXOffset / window.scrollX 和 window.pageYOffset / window.scrollY
+2. 滚动
+    - window.scrollBy(x, y) 滚动相应距离
+    - window.scrollTo(x, y) 滚动到相应位置
+    - window.scroll(x, y) 滚动
+    - 以上接受一个ScrollOption字典，{left: 100, top: 100, behavior: 'auto'/'smooth'}} 
+        - auto 正常滚动
+        - smooth 平滑混动
+- window.open
+
