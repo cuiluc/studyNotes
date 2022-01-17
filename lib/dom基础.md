@@ -50,7 +50,7 @@
 - parentNode - Document 或 Element 对象
 - 子节点可以是 Element、Text、Comment、ProcessingInstruction、CDATASection、EntityReference类型
 - 所有的 HTML元素 都通过 HTMLElement （包括直接实例或者间接实例，如 HTMLBodyElement）表示，HTMLElement 直接继承 Element 并增加了一些属性
-    - .className 可读取
+    - .className 可读取， 用此设置类名
     - .id 可读取
 - 取得属性
     - element.getAttribute(atrName)
@@ -61,6 +61,8 @@
         - 公用属性可以通过 element. 赋值，会反应到Dom上，其他的不可以，只会给element添加值
     - element.setAttribute(atrName, value)
         - atrName 规范为小写
+    - element.setAttributeNS(spaceName, atrName, value)
+        - 命名空间变化， 第一个参数为命名空间字符串
     - element.removeAttribute(atrName)
         - 连属性带值一起会被移除掉
     - element.attributes 获取属性集合，返回 NamedNodeMap 实例
@@ -106,6 +108,7 @@ element.setAttributeNode(attr)
         - 返回一新文本节点，包含剩下的文本
 - 创建文本节点
     - document.createTextNode(str)
+        - 可以用过 element.textContent = 'xx'直接设置文本节点， 比起innerText更推荐这个
     - 可通过 element.appendChild(textNode) 添加
     - 可以创建多个文本节点，插入同一个元素，只有这种情况，一个元素的子元素才有多个文本节点
     - 含有多个文本节点时，在父元素调用.normalize()，所有同胞文本节点会合并为一个文本节点，中间被别的元素隔开的不能合并
@@ -211,6 +214,8 @@ while (i++ <= 3) {
 ul.appendChild(fragment);
 // 此时文档片段的子节点全部被转义到了 ul,  fragment 为空
 ```
+---
+
 ## DOM编程
 ### 动态脚本
 - 页面初始加载时不存在，后面通过添加dom加载的脚本
@@ -326,3 +331,129 @@ tbody.rows[1].cells[1].appendChild(document.createTextNode("Cell 2,2"))
 // **把表格添加到文档主体**
 document.body.appendChild(table);
 ```
+
+### NodeList 对象
+- 和 NamedNodeMap, HTMLCollection 这三个都是实时的
+- 所以，document.getElementsByTagName() 获取的NodeList 对象是实时的，如果要添加同样的标签，那么最好将长度保存起来
+---
+
+## MutationObserver接口
+- 可以在DOM被修改时异步执行回调。使用MutationObserver可以观察整个文档、DOM树的一部分，或某个元素。此外还可以观察元素属性、子节点、文本，或者前三者任意组合的变化。
+- 新引进MutationObserver接口是为了取代废弃的MutationEvent。
+- MutationObserver 的实例要通过调用 MutationObserver构造函数并传入一个回调函数来创建：
+```
+let observer = new MutationObserver((mutationRecords, mutationObserver) => console.log(mutationRecords, mutationObserver));
+```
+### 基本语法 observe 方法
+- observe(要观察的DOM节点，MutationObserverInit对象)方法
+    - 新创建的MutationObserver实例不会关联DOM的任何部分。
+    - 要把这个observer与DOM关联起来，需要使用observe()方法。
+    - 参数一，必须是一个node，不能为nodeList
+    - 参数二，MutationObserverInit对象用于控制观察哪些方面的变化，是一个键/值对形式配置选项的字典。
+        - MutationObserverInit 对象用于控制对目标节点的观察范围。观察者可以观察的事件包括属性变化、文本变化和子节点变化。
+        - 对象属性 childList / attributes / characterData 不管直接或间接，至少需要一个为 true 不然报错
+            - subtree 布尔值，默认false，是否观察目标节点的子树， true则观察自己以及后代
+                - 默认为目标元素及其**子节点**的变化
+                - 为true，以下三种情况会触发回调
+                    - attributes 为 true 时，子元素的属性变化
+                    - characterData 为 true 时，子元素的字符数据变化
+                    - childList 为 true 时，子元素的增删子节点
+                - 注意，被观察目标元素中的节点被移出其子树之后，即严格来讲该节点已经脱离了原来的目标元素，但它仍然会触发变化事件。
+
+            - attributes 布尔值，默认false，是否观察目标节点的属性变化
+            - attributeFilter 字符串数组，默认观察所有属性，表示要观察哪些属性变化
+                - 把这个设置成true的话，attributes也会被转化为 true
+                - 没在数组内的，无法触发回调
+                - 默认的都是公认的dom属性，可以把自定义的属性名写到其中，如，attributeFilter: ['foo']
+            - attributeOldValue 布尔值，默认false，设置 mutationRecords 是否启用记录变化之前的属性值
+                - 把这个设置成true的话，attributes也会被转化为 true
+            
+            - characterData 布尔值，默认false，修改字符数据是否触发变化
+            - characterOldValue, 布尔值，默认false，设置 mutationRecords 是否记录变化之前的字符数据
+                - 把这个设置成true的话，characterData也会被转化为 true
+
+            - childList 布尔值，默认false，表示修改目标节点的子节点是否触发变化事件，观察**子节点的添加和移除**
+                - insertBefore 重新排序页面当前存在的元素，会触发两次变化，移除 + 添加
+    ```
+    // 创建一个观察者（observer）并配置它观察<body>元素上的属性变化
+    let observer = new MutationObserver(() => console.log( 'body changed' ));
+    observer.observe(document.body, {attributes: true})
+    ```
+    - body元素任何属性变化，都会执行回调函数；但是，<*body>元素后代的修改或其他非属性修改都不会触发回调进入任务队列
+
+### 回调函数参数
+    - 第一个参数， MutationRecord
+        - 每个回调都会收到一个 MutationRecord 实例的数组。
+        - MutationRecord 实例包含的信息包括发生了什么变化，以及DOM的哪一部分受到了影响。
+        - 因为回调执行之前可能同时发生多个满足观察条件的事件，所以每次执行回调都会传入一个包含按顺序入队的MutationRecord实例的数组。
+        - 数组对象可以看出目标元素target， 变化类型type
+        - 连续修改会按顺序记录，对同一属性赋值多次，即便是赋值同一个值，也会产生同样多的记录
+        - MutationRecord 实例属性
+            - target 被修改影响的目标节点
+            - type，字符串 attributes , characterData 或者 childList
+            - oldValue， type - childList一直为null；其他两种类型在*observe的参数二MutationObserverInit对象*启用观察时，两个为被替代的值，否则为null
+            - attributeName，type -  attributes为被修改的属性的
+            - attributeNamespace，使用命名空间的attributes的变化，其他为null
+            - addedNode,  childList变化，返回添加节点的 NodeList, 默认为空的 NodeList[]
+            - removedNode,  childList变化，返回删除节点的 NodeList, 默认为空的 NodeList[]
+            - previousSibling,  childList变化，返回变化节点前一个同胞Node, 默认为null
+            - nexSibling,  childList变化，返回变化节点后一个同胞Node, 默认为null
+    - 第二个参数， 观察变化的 MutationObserver
+
+### 基本语法 disconnect()
+    - 默认情况下，只要被观察的**元素**不被垃圾回收，MutationObserver的回调就会响应DOM变化事件，从而被执行。
+    - 要提前终止执行回调，可以调用disconnect()方法。
+    - 同步调用，在两次变化之间，调用 observer.disconnect() 之后，不仅会停止此后变化事件的回调，也会**抛弃已经加入任务队列要异步执行的回调**; 要不影响已经加入的，把 observer.disconnect() 放到setTimeout, 0中
+    ```
+    let observer = new MutationObserver((mutationRecords, MutationObserver) => console.log(mutationRecords, mutationObserver));
+    observer.observe(document.body, { attributes: true })
+    document.body.className = 'a'
+    setTimeout(() => {
+        // 这样第一次的'a'可以调用回调
+        observer.disconnect()
+        document.body.className = 'b'
+    }, 0)
+    ```
+
+### 基本语法 takeRecords()
+- 调用 MutationObserver 实例的takeRecords()方法可以清空记录队列，取出并返回其中的所有MutationRecord实例
+- 希望断开与观察目标的联系，但又希望处理由于调用disconnect()而被抛弃的记录队列中的 MutationRecord实例时比较有用。
+```
+let observer = new MutationObserver((mutationRecords, MutationObserver) => console.log(mutationRecords, mutationObserver));
+observer.observe(document.body, { attributes: true })
+document.body.className = 'a'
+observer.takeRecords() // [MutationRecord]
+observer.takeRecords() // []
+```
+
+### 复用，多次使用 MutationObserver
+    - 多次调用observe()方法，可以复用一个MutationObserver对象观察多个不同的目标节点。
+        - 此时，MutationRecord 数组的 target属性可以标识发生变化事件的目标节点。
+    - disconnect()，调用它会停止观察所有目标
+    ```
+    let observer = new MutationObserver((mutationRecords, MutationObserver) => console.log(mutationRecords, mutationObserver));
+    observer.observe(dom1), { attributes: true })
+    observer.observe(dom2), { attributes: true })
+    // dom1 和 dom2 的属性变化，会在同一个数组 mutationRecords 显示，只是 target 不同
+    ```
+
+### 重用，重新使用 MutationObserver
+    - 调用disconnect() 并不会结束MutationObserver的生命。
+    - 可重新使用这个观察者，再将它关联到新的目标节点。
+
+### 注意
+- 回调函数观察到变化后执行，且不是同步任务
+- MutationObserver接口是出于性能考虑而设计的，其核心是异步回调与记录队列模型。为了在大量变化事件发生时不影响性能，每次变化的信息（由观察者实例决定）会保存在MutationRecord实例中，然后添加到记录队列。这个队列对每个MutationObserver实例都是唯一的，是所有DOM变化事件的有序列表。
+    - 每次MutationRecord被添加到MutationObserver的记录队列时，**仅当之前没有已排期的微任务回调**时（队列中微任务长度为0），才会将观察者注册的回调（在初始化MutationObserver时传入）作为**微任务**调度到任务队列上。这样可以保证记录队列的内容不会被回调处理两次。
+    - 不过在回调的微任务异步执行期间，有可能又会发生更多变化事件。因此被调用的回调会接收到一个MutationRecord实例的数组，顺序为它们进入记录队列的顺序。回调要负责处理这个数组的每一个实例，因为函数退出之后这些实现就不存在了。回调执行后，这些MutationRecord就用不着了，因此记录队列会被清空，其内容会被丢弃。
+
+- DOM Level 2规范中描述的 MutationEvent 定义了一组会在各种DOM变化时触发的事件。由于浏览器事件的实现机制，这个接口出现了严重的性能问题。因此，DOM Level 3规定废弃了这些事件。
+- MutationObserver接口就是为替代这些事件而设计的更实用、性能更好的方案。将变化回调委托给微任务来执行可以保证事件同步触发，同时避免随之而来的混乱。为Mutation-Observer而实现的记录队列，可以保证即使变化事件被爆发式地触发，也不会显著地拖慢浏览器。无论如何，使用MutationObserver仍然不是没有代价的。因此理解什么时候避免出现这种情况就很重要了。
+    - MutationObserver的引用
+        - MutationObserver实例与目标节点之间的引用关系是非对称的。MutationObserver拥有对要观察的目标节点的弱引用。
+        - 因为是弱引用，所以不会妨碍垃圾回收程序回收目标节点。
+        - 目标节点却拥有对MutationObserver的强引用。如果目标节点从DOM中被移除，随后被垃圾回收，则关联的MutationObserver也会被垃圾回收。
+    - MutationRecord的引用
+        - 记录队列中的每个MutationRecord实例至少包含对已有DOM节点的一个引用。如果变化是childList类型，则会包含多个节点的引用。
+        - 记录队列和回调处理的默认行为是耗尽这个队列，处理每个MutationRecord，然后让它们超出作用域并被垃圾回收。
+        - 有时候可能需要保存某个观察者的完整变化记录。保存这些MutationRecord实例，也就会保存它们引用的节点，因而会妨碍这些节点被回收。如果需要尽快地释放内存，建议从每个MutationRecord中抽取出最有用的信息，然后保存到一个新对象中，最后抛弃MutationRecord。

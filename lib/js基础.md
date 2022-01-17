@@ -1,7 +1,9 @@
 # 注意
 - 传递函数 和 函数调用，传递的函数可以抽离，注意API传递的参数即可
 - - window.performance.now() 不受系统时间影响
-# ****** 分割线 ******
+---
+---
+
 # script标签执行
 1. 内部， script 标签中的代码没有完成前，页面的其余内容不会被加载，也不会显示； 
 2. 外部
@@ -49,14 +51,16 @@
 - 页面渲染时机
     1. 第一次，dom树和css树加载完毕
     2. 后面，在微任务执行结束, 去取宏任务的间隙
-# ****** 分割线 ******
+---
+---
 
 # 变量
  - 在解析代码时，Javascript引擎也会注意到块后面的 let/const 声明，在声明之前不可以引用，声明前使用的执行瞬间叫**暂时性死区**
  - var 的变量会成为 window 对象的属性， let 不会
  - let 是块级作用域，所以可以在不同的script块声明
+---
+---
 
-# ****** 分割线 ******
 # Promise
 1. new Promise() 不可以，必须提供一个处理函数，哪怕是空函数 new Promise(()=>{})
 2. Promise 的状态一旦改变，后面都会改变
@@ -85,6 +89,7 @@ let p2 = Promise.reject(p1);
 p1 === p2
 // false
 ```
+
 ## Promise 状态落定后，执行
 1. 实例方法 Promise.prototype.then, 返回一个新的期约
 - 不传处理程序则原样后传
@@ -146,6 +151,7 @@ let p6 = p1.finally(null, () => Promise.reject())
 let p8 = p1.finally(null, () => {throw '3'})
 // Promise {<rejected>: "3"}
 ```
+
 ## Promise.all
 1. **必须**接受一个可迭代对象， 返回一个新的期约
 ```
@@ -164,9 +170,11 @@ let p2 = Promise.all([1, 2, 3])
 3. Promise.all([]) 等价于 Promise.resolve()
 4. 遇到待定，整体待定
 5. 一个拒绝，全部拒绝，第一个拒绝会被当做理由，后面的拒绝无法改变这个拒绝,同时会静默处理其他期约的拒绝，但是原外层代码仍会执行
+
 ## Promise.race()
 1,2,3同上
 4. 最先解决的期约，无论成功或失败，会成为最终理由/值，可以直接获取，不在数组取值
+
 ## 拓展
 1. 期约取消
     - 期约是激进的，在执行结束前无法停止；
@@ -174,6 +182,7 @@ let p2 = Promise.all([1, 2, 3])
     - [代码](../js/CancelPromise.js)
 2. 进度追踪
     - [代码](../js/PromiseProgressHandler.js)
+
 ## 异步函数
 1. async
 - async 包装函数后，期待一个实现thenable的对象，所以可以直接返回一个promise; 如果不是会将函数的返回值，没有return 则为 undefined ，用 Promise.resolve() 包装为一个期约对象，后面可以用then获取到返回值
@@ -235,6 +244,7 @@ await a;
 await b;
 ```
 - async/await 可以在for循环使用，会依次调用的
+
 ## 注意
 1. 同步代码先执行， 执行 promise 本身会直接执行，相当于同步代码，只是 resolve 和 reject 调用时， 会排期，等同步代码执行后执行
 2. resolve / reject调用后的代码仍然可以执行，只是状态更改后，后面更改状态将静默失败
@@ -263,7 +273,8 @@ function foo() {
 }
 foo()
 ```
-# ****** 分割线 ******
+---
+---
 
 # BOM
 ## window
@@ -379,6 +390,7 @@ setTimeout(fn, 5000, 'a', 'b', 'c', 'd')
 - 异步对话框，楼兰器对话框计数器不会涉及，用户设置禁用也没用
     - window.print() 显示打印对话框，异步
     - window.find() 显示查找对话框，异步
+
 ## window.location ===  document.location; 
 - 保存了文档信息，以及URL信息
 - location.search中要用decodeURIComponent解码, 如下是语法糖，**URLSearchParams**
@@ -441,8 +453,10 @@ obj.toString(); // a=1&c=3
 - navigator.geolocation暴露了一个API，可以让脚本感知当前设备地理信息，不过精度和设备配置有关系
     - 当前地理信息 `navigator.geolocation.getCurrentPosition(po => console.log(po))`
 - navigator.onLine 检查浏览器是否联网，可window上的事件，online/offline可以检测事件
+
 ## window.screen 客户端能力信息
 - screen.orientation 移动端返回屏幕相对于默认情况的角度
+
 ## window.history 导航信息，不会暴露信息，但是可前进或后退
 - history.go(param)
     - param 为数值，正数前进， 负数后退， 0 刷新

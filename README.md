@@ -1,6 +1,9 @@
-# 学习的点点滴滴
+# web学习的点点滴滴
 ## DOM
 - [dom基础](./lib/dom基础.md)
+
+## CSS
+- [CSS](./lib/css.md)
 
 ## JS
 - [JS基础](./lib/js基础.md)
