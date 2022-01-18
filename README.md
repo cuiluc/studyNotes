@@ -9,9 +9,9 @@
 - [JS基础](./lib/js基础.md)
 
 ## JS实现
-- [generator实现await函数](./js/generator实现await函数.js)
+- [generator实现await函数](./static/generator实现await函数.js)
 - [函数式编程入门教程](http://www.ruanyifeng.com/blog/2017/02/fp-tutorial.html)
-    - [参考代码](./js/functionCode.js)
+    - [参考代码](./static/functionCode.js)
 
 ## Markdown
 - [md语法](./lib/markdown.md)

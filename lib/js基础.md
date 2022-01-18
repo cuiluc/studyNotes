@@ -52,7 +52,7 @@
         ```
         <script type="text/javascript">
         //<![CDATA[
-        dosomething
+            dosomething
         //]]>
         </script>
         ```
@@ -84,34 +84,7 @@
 - 即使是字符串在 script 标签也不可以直接写， `</script>`，必须转义 **<\/script>** 才行
 - 一个script标签为一个宏任务, 先执行第一个宏任务，也就是第一个script标签，然后依次去塞，先进先出
     - 执行顺序`同步代码执行结束 - 微任务执行结束 - 宏任务`    
-```
-    1 9 8 3 4 6 2 5 7
-    <script>
-        console.log(1);
-        Promise.resolve(8).then((val) => {
-            console.log(val)
-        })
-        console.log(9)
-        setTimeout(() => {
-            console.log(2)
-        }, 0)
-        setTimeout(() => {
-            console.log(7)
-        }, 5000)
-        Promise.resolve(3).then((val) => {
-            console.log(val)
-        })
-    </script>
-    <script>
-        console.log(4);
-        setTimeout(() => {
-            console.log(5)
-        }, 0)
-        Promise.resolve(6).then((val) => {
-            console.log(val)
-        })
-    </script>
-```
+    - [例子](../static/excuScript.html)
 - 页面渲染时机
     1. 第一次，dom树和css树加载完毕
     2. 后面，在微任务执行结束, 去取宏任务的间隙
@@ -250,14 +223,179 @@
         let num5 = parseFloat("0908.5");     // 908.5
         let num6 = parseFloat("3.125e7");    // 31250000
         ```
-### 基础类型5 - String
-### 基础类型6 - Symbol
 
+### 基础类型5 - String
+- 表示零或多个16位Unicode字符序列
+- 可以用双引号（"）、单引号（'）或反引号（`）表示，使用哪种引号没有区别，开始结束一致即可
+- **字符字面量**
+    - 字符串包含一些字符字面量，用于表示非打印字符或有其他用途的字符，转义序列
+        - \n 换行
+        - \t 制表
+        - \b 退格
+        - \r 回车
+        - \f 换页
+        - \\\ 反斜杠
+        - \'，\"，\\`  字符串使用引号
+        - \xnn  以十六进制表示的字符，其中n（0-F），如 \x41 - A，此时**length为1**
+        - \unnnn 以十六进制表示的Unicode字符，其中n（0-F），如 \u03a3 - Σ，此时**length为1**
+    - 注意
+        - 以上字符可以出现在字符串的任意位置
+        - 当做单个字符解释，length 为 1
+- 字符串的特点
+    - ECMAScript中的字符串是不可变的（immutable），意思是一旦创建，它们的值就不能变了。
+    - 要修改某个变量中的字符串值，必须**先销毁**原始的字符串，然后将包含新值的另一个字符串保存到该变量
+    ```
+    let lang = "Java";
+    lang = lang + "Script";
+    ```
+    - 变量lang一开始包含字符串"Java"。
+    - 紧接着，lang被重新定义为包含"Java"和"Script"的组合，也就是"JavaScript"。
+    - 整个过程首先会分配一个足够容纳10个字符的空间，然后填充上"Java"和"Script"。
+    - 最后销毁原始的字符串"Java"和字符串"Script"，因为这两个字符串都没有用了。
+    - 所有处理都是在后台发生的，而这也是一些早期的浏览器（如Firefox 1.0之前的版本和IE6.0）在拼接字符串时非常慢的原因。
+    - 这些浏览器在后来的版本中都有针对性地解决了这个问题。
+- 字符串转换
+    - xx.toString()
+        - 返回当前值的字符串等价物
+        - 字符串调用只是简单地返回自身的一个副本
+        - null 和 undefined 没有toString()
+        - 参数，一般不接受；数值调用可以接收一个底数参数，即以什么底数来输出数值的字符串表示，默认十
+        ```
+        let num = 10;
+        num.toString()     // "10"
+        num.toString(2))    // "1010"
+        num.toString(8))    // "12"
+        num.toString(10)    // "10"
+        num.toString(16)    // "a"
+        ```
+    - String(xx)，始终会返回表示相应类型值的字符串，规则如下：
+        - 如果值有toString()方法，则调用该方法（不传参数）并返回结果。
+        - 如果值是null，返回"null"。
+        - 如果值是undefined，返回"undefined"。
+    - xx + '' 也可以隐式转换
+- 模板字面量
+    - 单双引号，引号内跨行会报错只能用\n，反斜杠可以直接跨行且被保留
+    - 会保持内部空格，有时候可能看着格式不当，比如``中先换行的话，相当于加了一个/n
+    - 字符串插值，也就是可以在一个连续定义中插入一个或多个值，严格来说模板字面量不是字符串，是一种特殊的js语法表达式，只不过求值后得到的是字符串。
+        - 模板字面量在定义时立即求值并转换为字符串实例，任何插入的变量也会从它们最接近的作用域中取值。
+        - 所有插入的值都会使用，所有插入的值都会使用toString()强制转型为字符串，而且任何JavaScript表达式都可以用于插值 \`${变量}str`
+
+    - 标签函数，接收被插值记号分隔后的模板和对每个表达式求值的结果。
+        - [例子](../static/tagFunction.js)
+    - 原始字符串，对**直接使用转义字符**的字符串，注意本身就是一个换行符使用无效，如
+        - String.raw\`\u00A9` -\u00A9
+        - 但是 String.raw\`©` - ©
+        - [例子](../static/rawStr.js)
+### 基础类型6 - Symbol()
+- 符号是原始值，且符号实例是唯一、不可变的。创建唯一标记，不会冲突
+- 没有字面量语法，不能和 new 当做构造函数用，是为了避免创建符号包装对象，像使用Boolean、String或Number那样，它们都支持构造函数且可用于初始化包含原始值的包装对象
+- 可以传入一个字符串参数作为对符号的描述（description），可以通过这个字符串来调试代码。但是，这个字符串参数与符号定义或标识完全无关
+```
+let genericSymbol = Symbol();
+let otherGenericSymbol = Symbol();
+let fooSymbol = Symbol('foo');
+let otherFooSymbol = Symbol('foo');
+console.log(genericSymbol == otherGenericSymbol); // false
+console.log(fooSymbol == otherFooSymbol); // false
+```
+- 想要使用符号包装对象 Object(mySymbol)
+- 全局符号注册表，需要复用时，使用字符串作为键
+    ```
+    let fooGlobalSymbol = Symbol.for('foo');
+    let secondGlobalSymbol = Symbol.for('foo');
+    console.log(typeof fooGlobalSymbol); // symbol
+    fooGlobalSymbol === secondGlobalSymbol; // true
+    ```
+    - Symbol.for(str) 操作是幂等的，第一次调用的时候创建并注册到全局，后面继续调用相同的字符串时，直接返回该实例
+    - Symbol('foo') !== Symbol.for('foo')
+    - Symbol.for() **必须**使用字符串创建，传入的任何值都会被转化为字符串，不传值相当于 'undefined'
+- Symbol.keyFor()来查询全局注册表
+    - 接受符号，返回全局符号对应的字符串， Symbol.keyFor(Symbol.for('a')) - a
+    - 如果不是全局符号返回 undefined， 如普通符号
+    - 传入不是符号，抛错TypeError
+- 作为对象属性
+    - [例子](../static/objectSymbol.js)
+    - 因为符号属性是对内存中符号的引用，如果没有找到只能Object.getOwnPropertySymbols(o)，循环tostring后，匹配字符串，才能找到
+- 常用内置符号
+    - 用于暴露语言内部行为，可以重新定义改变原生行为
+    - 所有内置符号属性都是不可写、不可枚举、不可配置的。
+    - 在提到ECMAScript规范时，经常会引用符号在规范中的名称，前缀为@@。比如，@@iterator指的就是Symbol.iterator。
+    1. Symbol.asyncIterator
+        - 方法，实现异步迭代器API的函数, 返回对象默认的AsyncIterator。for-await-of调用以Symbol.asyncIterator为键的函数。
+        - 生成的对象应通过其next()方法陆续返回Promise实例。可以通过显式调用next()，也可隐式通过for-await-of调用
+        - [例子](../static/symbolExams.js)
+    2. Symbol.hasInstance
+        - 方法，是否认可一个对象是它的实例。由instanceof操作符使用
+        - 默认定义在原型上
+        - [例子](../static/symbolExams.js)
+    3. Symbol.isConcatSpreadable
+        - 布尔值，true，即可用Array.prototype.concat()打平其数组元素
+        - Array.prototype.concat()方法会根据接收到的对象类型选择如何将一个类数组对象拼接成数组实例。
+        - 数组对象默认情况下会被打平到已有的数组
+            - false，整个对象追加到数组末尾。
+            - 类数组对象，默认被追加到数组末尾，true打平。
+            - 其他**不是类数组对象**的对象在Symbol.isConcatSpreadable被设置为true的情况下将被**忽略**。
+            ```
+            let initial = ['foo'];
+            let array = ['bar'];
+            console.log(array[Symbol.isConcatSpreadable]); // undefined
+            console.log(initial.concat(array)); // ['foo', 'bar']
+            // 类数组对象，默认直接追加 ['foo', {}]
+            // 不是类数组对象，默认直接追加 ['foo', Set(1)]
+            array[Symbol.isConcatSpreadable] = false;
+            // 设置为true后
+            // 类数组对象，直接追加 ['foo', 'bar']
+            // 不是类数组对象，忽略 ['foo']
+            initial.concat(array); //  ["foo", Array(1)]
+            ```
+    4. Symbol.iterator
+        - 一个方法，该方法返回对象默认的迭代器。由for-of语句使用。换句话说，这个符号表示实现迭代器API的函数。
+        - 返回的对象是实现该API的Generator
+        - [例子](../static/symbolExams.js)
+    5. Symbol.match
+        - 一个正则表达式方法，该方法用正则表达式去匹配字符串。由String.prototype.match()方法使用
+        - String.prototype.match()方法会使用以Symbol.match为键的函数来对正则表达式求值
+        - 正则表达式的原型上默认有这个函数的定义，因此所有正则表达式实例默认是这个String方法的有效参数
+        - 非正则表达式值会导致该值被转换为RegExp对象。
+        - 想改变，直接使用参数，则可以重新定义Symbol.match函数以取代默认对正则表达式求值的行为，从而让match()方法使用非正则表达式实例。Symbol.match函数接收一个参数，就是调用match()方法的字符串实例
+        - [例子](../static/symbolExams.js)
+    6. Symbol.replace
+        - 一个正则表达式方法，该方法替换一个字符串中匹配的子串。由String.prototype.replace()方法使用
+        - String.prototype.replace()方法会使用以Symbol.replace为键的函数来对正则表达式求值。
+        - 正则表达式的原型上默认有这个函数的定义，因此所有正则表达式实例默认是这个String方法的有效参数
+        - 给这个方法传入非正则表达式值会导致该值被转换为RegExp对象。
+        - 如果想改变这种行为，让方法直接使用参数，可以重新定义Symbol.replace函数以取代默认对正则表达式求值的行为，从而让replace()方法使用非正则表达式实例。
+        - Symbol.replace函数接收两个参数，即调用replace()方法的字符串实例和替换字符串。
+        - 返回的值没有限制
+        - [例子](../static/symbolExams.js)
+    8. Symbol.search
+        - 一个正则表达式方法，该方法返回字符串中匹配正则表达式的索引。由String.prototype.search()方法使用
+        - 默认有
+        - 给这个方法传入非正则表达式值会导致该值被转换为RegExp对象。
+        - 如果想改变这种行为，让方法直接使用参数，可以重新定义Symbol.search函数以取代默认对正则表达式求值的行为，从而让search()方法使用非正则表达式实例。
+        - Symbol.search函数接收一个参数，就是调用match()方法的字符串实例。
+        - 返回的值没有限制
+        - [例子](../static/symbolExams.js)
+    9. Symbol.species
+        - 一个函数值，该函数作为创建派生对象的构造函数
+        - 在内置类型中最常用，用于对内置类型实例方法的返回值暴露实例化派生对象的方法
+        - 用Symbol.species定义静态的获取器（getter）方法，可以覆盖新创建实例的原型定义
+        - [例子](../static/symbol.species.js)
+    10. Symbol.split
+        - 一个正则表达式方法，该方法在匹配正则表达式的索引位置拆分字符串。由String.prototype.split()方法使用。
+        - String.prototype. split()方法会使用以Symbol.split为键的函数来对正则表达式求值。
+        - 正则表达式的原型上默认有这个函数的定义，因此所有正则表达式实例默认是这个String方法的有效参数
+        - 给这个方法传入非正则表达式值会导致该值被转换为RegExp对象。
+        - 如果想改变这种行为，让方法直接使用参数，可以重新定义Symbol.split函数以取代默认对正则表达式求值的行为，从而让split()方法使用非正则表达式实例。
+        - Symbol.split函数接收一个参数，就是调用match()方法的字符串实例
+        - 返回的值没有限制
+        - [例子](../static/symbolExams.js)
 ### 复杂数据类型 - Object
 
 == 会为了比较，而转换操作数
 
 虽然不常见，但isNaN()可以用于测试对象。此时，首先会调用对象的valueOf()方法，然后再确定返回的值是否可以转换为数值。如果不能，再调用toString()方法，并测试其返回值。这通常是ECMAScript内置函数和操作符的工作方式45
+- 如果字符串中包含双字节字符，那么length属性返回的值可能不是准确的字符数。第5章将具体讨论如何解决这个问题。
 ---
 ---
 
@@ -379,9 +517,9 @@ let p2 = Promise.all([1, 2, 3])
 1. 期约取消
     - 期约是激进的，在执行结束前无法停止；
     - 现有基础上实现取消期约的功能
-    - [代码](../js/CancelPromise.js)
+    - [代码](../static/CancelPromise.js)
 2. 进度追踪
-    - [代码](../js/PromiseProgressHandler.js)
+    - [代码](../static/PromiseProgressHandler.js)
 
 ## 异步函数
 1. async
