@@ -26,7 +26,9 @@
 
 # 注意
 - 传递函数 和 函数调用，传递的函数可以抽离，注意API传递的参数即可
-- - window.performance.now() 不受系统时间影响
+- window.performance.now() 不受系统时间影响
+- ()解释器先执行
+- 严格模式为容易出错的地方，增加了限制
 
 
 # script
@@ -223,10 +225,10 @@
         let num5 = parseFloat("0908.5");     // 908.5
         let num6 = parseFloat("3.125e7");    // 31250000
         ```
-
 ### 基础类型5 - String
 - 表示零或多个16位Unicode字符序列
 - 可以用双引号（"）、单引号（'）或反引号（`）表示，使用哪种引号没有区别，开始结束一致即可
+- 如果字符串中包含双字节字符，那么length属性返回的值可能不是准确的字符数
 - **字符字面量**
     - 字符串包含一些字符字面量，用于表示非打印字符或有其他用途的字符，转义序列
         - \n 换行
@@ -329,7 +331,7 @@ console.log(fooSymbol == otherFooSymbol); // false
         - 默认定义在原型上
         - [例子](../static/symbolExams.js)
     3. Symbol.isConcatSpreadable
-        - 布尔值，true，即可用Array.prototype.concat()打平其数组元素
+        - 布尔值，true，可用Array.prototype.concat()打平其数组元素
         - Array.prototype.concat()方法会根据接收到的对象类型选择如何将一个类数组对象拼接成数组实例。
         - 数组对象默认情况下会被打平到已有的数组
             - false，整个对象追加到数组末尾。
@@ -349,15 +351,15 @@ console.log(fooSymbol == otherFooSymbol); // false
             initial.concat(array); //  ["foo", Array(1)]
             ```
     4. Symbol.iterator
-        - 一个方法，该方法返回对象默认的迭代器。由for-of语句使用。换句话说，这个符号表示实现迭代器API的函数。
+        - 方法，返回对象默认的迭代器，表示实现迭代器API的函数。for-of语句使用。
         - 返回的对象是实现该API的Generator
         - [例子](../static/symbolExams.js)
     5. Symbol.match
-        - 一个正则表达式方法，该方法用正则表达式去匹配字符串。由String.prototype.match()方法使用
-        - String.prototype.match()方法会使用以Symbol.match为键的函数来对正则表达式求值
-        - 正则表达式的原型上默认有这个函数的定义，因此所有正则表达式实例默认是这个String方法的有效参数
-        - 非正则表达式值会导致该值被转换为RegExp对象。
-        - 想改变，直接使用参数，则可以重新定义Symbol.match函数以取代默认对正则表达式求值的行为，从而让match()方法使用非正则表达式实例。Symbol.match函数接收一个参数，就是调用match()方法的字符串实例
+        - 正则表达式方法，该方法用正则表达式去匹配字符串。String.prototype.match()方法使用
+        - String.prototype.match()使用Symbol.match为键的函数，对正则表达式求值
+        - 正则表达式的原型上默认有，因此所有正则表达式实例默认是这个String方法的有效参数
+        - 非正则表达式值会被转换为RegExp对象。
+        - 想改，直接使用参数，则可以重新定义Symbol.match函数以取代默认对正则表达式求值的行为，从而让match()方法使用非正则表达式实例。Symbol.match函数接收一个参数，就是调用match()方法的字符串实例
         - [例子](../static/symbolExams.js)
     6. Symbol.replace
         - 一个正则表达式方法，该方法替换一个字符串中匹配的子串。由String.prototype.replace()方法使用
@@ -390,12 +392,278 @@ console.log(fooSymbol == otherFooSymbol); // false
         - Symbol.split函数接收一个参数，就是调用match()方法的字符串实例
         - 返回的值没有限制
         - [例子](../static/symbolExams.js)
+    11. Symbol.toPrimitive
+        - 方法，将对象转换为相应的原始值。由ToPrimitive抽象操作使用
+        - 很多内置操作都会尝试强制将对象转换为原始值，包括字符串、数值和未指定的原始类型
+        - 自定义对象可以改
+        - 根据提供给这个函数的参数（string、number或default，参数表示在做什么运算，字符串还是数值，还是其他），控制返回的原始值
+        - [例子](../static/symbolExams.js)
+    12. Symbol.toStringTag
+        - 字符串，用于创建对象的默认字符串描述。Object.prototype.toString()调用
+        - 内置的对象，默认为"Object"，会把内置对象的构造函数显示出来
+        - [例子](../static/symbol.toStringTag.js)
+    13. Symbol.unscopables
+        - 对象，该对象所有及继承的属性，都会从关联对象的with环境绑定中排除
+        - 设置并映射对应属性的键值为true，可以阻止属性出现在with环境绑定中
+        - 不推荐使用with，因此也不推荐使用Symbol.unscopables
+        ```
+        let o = { foo: 'bar' };
+        with(o) {
+            console.log(foo); // bar
+        }
+        o[Symbol.unscopables] = {
+            foo: true
+        };
+        with(o) {
+            console.log(foo); // ReferenceError
+        }
+        ```
+
 ### 复杂数据类型 - Object
+- 可以new Object()可以不加括号创建，但是不推荐
+- 派生其他对象的基类，Object上有的属性和方法，派生对象也有
+- 所有对象的基类，对象的行为不一定适合JavaScript其他对象，比如 BOM和DOM是宿主环境决定的，不受ECMA-262约束，所以可能不继承。
+- 每个Object实例都有以下属性和方法：
+    - constructor：用于创建当前对象的函数。在new Object()中，这个属性的值就是Object()函数。
+    - hasOwnProperty（propertyName）：用于判断当前对象实例（不是原型）上是否存在给定的属性。要检查的属性名必须是字符串（如o.hasOwnProperty("name")）或符号。
+    - isPrototypeOf（object）：用于判断当前对象是否为另一个对象的原型。
+    - propertyIsEnumerable(propertyName)：用于判断给定的属性是否可以使用for-in语句枚举。属性名必须是字符串。
+    - toLocaleString()：返回对象的字符串表示，该字符串反映对象所在的本地化执行环境。
+    - toString()：返回对象的字符串表示。
+    - valueOf()：返回对象对应的字符串、数值或布尔值表示。通常与toString()的返回值相同。
 
-== 会为了比较，而转换操作数
+## 操作符
+- 可以应用于各种值，不过在用给对象时，通常会调用valueOf()和/或toString()方法来取得可以计算的值。
+### 递增/递减操作符
+- 前缀递增或递减，会在语句被求值改变，俗称副作用
+- 前缀递增或递减 和 后缀递增或递减，可以作用于任何值，不限于整数——字符串、布尔值、浮点值，对象也可，最终都会转化为数值（数值包括NaN）。规则如下
+    - 有效数值字符串，转为数值，再计算
+    - 非有效数值字符串，NaN
+    - 布尔值false，0，再计算
+    - 布尔值true，1，再计算
+    - 浮点数，加减1，浮点数会不精确，如let a = 1.1; --a; 0.10000000000000009
+    - 对象，先valueOf()，应用上面规则，仍NaN的话；则再toString()，应用上面规则，不行，NaN
+### 一元加和减操作符
+- 主要用于数值运算，也可用于转类型
+- 加号
+    - 对数值没有任何影响
+    - 应用到非数值，和Number一样的规则，最终都会变为数值
+- 减号
+    - 数值变负数
+    - 应用到非数值，和加号一样，转化后取负值
+### 位操作符
+- 用于数值的底层操作，即操作内存中表示数据的比特（位）
+- ECMAScript中的所有数值都以IEEE 754 64位格式存储。位操作并不直接用64位，先转成32位，再运算，再转成64位存储，但开发者只感知到32位。这个转换也导致副作用，即特殊值NaN和Infinity在位操作中都会被当成0处理
+- 有**符号整数**使用32位 = 前31位表示整数值 + 第32位表示数值的符号（0表示正，1表示负）。第32位称为符号位（sign bit），它的值决定了数值其余部分的格式
+    - 正值以真正的二进制格式存储，即31位中的每一位都代表2的幂，第一位2的0次方，依次类推，空用0填，表示忽略不计。如数值18的二进制格式为00000000000000000000000000010010，或更精简的10010。后者是用到的5个有效位，决定了实际的值，2^4 + 2^1 = 18
+    - 负值以一种称为二补数（或补码）的二进制编码存储，计算：
+        1. 确定绝对值的二进制表示，比如 -18 看 18
+        2. 找到数值的一补数（或反码），即，每个0变1，每个1变0，比如  10010 变   1111   1111   1111   1111   1111   1111   1110   1101
+        3. 给结果加一， 1111   1111   1111   1111   1111   1111   1110   1110
+    - 在处理有符号整数时，无法访问第31位。
+    - ECMAScript会记录，转换时会求补位，但实际看到的-18.toString(2)为-10010，绝对值加负号
+    - ECMAScript所有整数都是有符号数的，但实际也有无符号的，第32不表示符号表数值，此时表示整数范围更大
+#### 位非操作符 波浪符（~）
+- 返回数值的一补数
+```
+let num1 = 25;        // 二进制00000000000000000000000000011001
+let num2 = ~num1;    // 二进制11111111111111111111111111100110
+console.log(num2);   // -26
+```
+- 按位非的最终效果是对数值取反并减1，但因为位操作是在数值的底层表示上完成的，位操作的速度快得多。
 
-虽然不常见，但isNaN()可以用于测试对象。此时，首先会调用对象的valueOf()方法，然后再确定返回的值是否可以转换为数值。如果不能，再调用toString()方法，并测试其返回值。这通常是ECMAScript内置函数和操作符的工作方式45
-- 如果字符串中包含双字节字符，那么length属性返回的值可能不是准确的字符数。第5章将具体讨论如何解决这个问题。
+#### 按位与操作符 和号（&）
+- 两个操作数，a&b，返回值会将二进制转为十进制数
+- 都是1返回1，遇0则0
+
+#### 按位或操作符 管道符（|）
+- 两个操作数，a|b，返回值会将二进制转为十进制数
+- 都是0返回0，遇1则1
+
+#### 按位异或 脱字符（^）
+- 两个操作数，a^b，返回值会将二进制转为十进制数
+- 一0一1，返回1；一样0
+
+#### 左移，两个小于号（<<）
+- 会按照指定的位数将数值的所有位向左移动
+- 转为二进制，**符号位固定不变**，将其他精简，向左移动几位，后面补几个零
+- 负数时，转化为绝对值，左移后，加负号
+- 左移保留操作数的符号。 2 << 5 - 64, -2 << 5 - -64
+
+#### 右移
+1. 有符号右移
+    - 两个大于号（>>）
+    - 是左移的逆运算
+    - 转二进制，将其他精简，向右移动几位，空位出现在左侧，**符号位之后**，补几个零
+    - 负数时，转化为绝对值，右移后，加负号
+2. 无符号右移
+    - 3个大于号（>>>）
+    - 将数值的所有32位都向右移
+    - 正数和有符号右移一样
+    - 负数，连带符号位一起左移
+### 布尔操作符
+1. 逻辑非 叹号（!），一个操作数
+    - 始终返回布尔值
+    - 先将操作数转换为布尔值，再取反
+    - 非0数值（包括Infinity），false
+    - NaN、null，true
+    - 两个叹号（! !），相当于调用Boolean()
+2. 逻辑与 两个和号（&&），两个个操作数
+    - 有操作数不是布尔值，不一定返回布尔值，规则如下
+        - 第一个对象，则返回第二个操作数。
+        - 第二个对象，则只有第一个操作数求值为true才会返回该对象。
+        - 两个都对象，则返回第二个操作数。
+        - 有一个null，则返回null。
+        - 有一个NaN，则返回NaN。
+        - 有一个操作数是undefined，则返回undefined
+    - 短路操作符，如果第一个值决定了结果false，不会再对第二个操作数求值
+3. 逻辑或 两个管道符（||）
+    -  有操作数不是布尔值，不一定返回布尔值，规则如下
+        - 第一个是对象，则返回第一个操作数。
+        - 第一个求值为false，则返回第二个操作数。
+        - 两个都是对象，则返回第一个操作数。
+        - 两个都是null，则返回null。
+        - 两个都是NaN，则返回NaN。
+        - 两个都是undefined，则返回undefined。
+    - 短路操作符，如果第一个值决定了结果true，不会再对第二个操作数求值
+        - 可用于赋值默认值
+### 乘性操作符
+1. 乘法 *
+    - 非数值操作数，会使用Number转型
+    - 有NaN返回NaN
+    - 0 * Infinity，NaN
+2. 除法 /
+    - 非数值操作数，会使用Number转型
+    - 有NaN返回NaN
+    - Infinity / Infinity、0 / 0 ，NaN
+    - 非0 / 0，Infinity；负非0 / 0，-Infinity
+3. 取模操作数 %，返回余数
+    - 非数值操作数，会使用Number转型
+    - Infinity % 有限值，NaN
+    - 有限值 % Infinity，有限值
+    - 有限值 % 0，NaN
+    - Infinity % Infinity，NaN
+    - 0 % 非，0
+### 指性操作符
+- Math.pow(3, 2) === 3 ** 2 = 9
+- 指数赋值操作符 let a = 3; a **= 2，9
+### 加性操作符
+1. 加法 + 
+    - 都是数值，规则如下：
+        - 如果有任一操作数是NaN，则返回NaN；
+        - 如果是Infinity加Infinity，则返回Infinity；
+        - 如果是-Infinity加-Infinity，则返回-Infinity；
+        - 如果是Infinity加-Infinity，则返回NaN；
+        - 如果是+0加+0，则返回+0；
+        - 如果是-0加+0，则返回+0；
+        - 如果是-0加-0，则返回-0
+    - 有一个字符串，拼接，对象调用toString()\undefined、null掉调用String()
+2. 减法 -
+    - 两个操作数都是数值，执行数学减法运算并返回结果。
+    - 有任一操作数是NaN，则返回NaN。
+    - Infinity减Infinity，则返回NaN。
+    - -Infinity减-Infinity，则返回NaN。
+    - Infinity减-Infinity，则返回Infinity。
+    - -Infinity减Infinity，则返回-Infinity。
+    - +0减+0，则返回+0。
+    - +0减-0，则返回-0。
+    - -0减-0，则返回+0。
+    - 有任一操作数是字符串、布尔值、null或undefined，则Number()转换，再用前面的规则执行数学运算。如果转换结果是NaN，则减法计算的结果是NaN。
+    - 有任一操作数是对象，valueOf()。如果是NaN，则减法计算的结果是NaN。如果对象没有valueOf()方法，则调用其toString()方法，然后再将得到的字符串转换为数值。
+### 关系操作符 < <= > >=
+- 均返回布尔值
+- 规则
+    - 都是数值，数值比较。
+    - 都是字符串，则逐个比较字符串中对应**字符的编码**。
+    - **任一操作数是数值**，则将另一个操作数转换为数值，执行数值比较
+    - 任一操作数是对象，调用valueOf()后，根据前面的规则执行比较。如果没有valueOf()，则用toString()后比较。
+    - 任一操作数是布尔值，则将其转换为数值再执行比较
+    - 任何关系操作符在涉及比较NaN时都返回false
+- 大写字母的编码都小于小写字母的编码，最好转成小写比较
+- '23' < '3'，true，字符串; '23' < 3，false，数值
+### 相等操作符
+- 等于和不等于会进行强制类型转化
+    - 布尔转数值
+    - 一字符串一数值，转成数值
+    - 对象，valueOf()后比较
+    - null == undefined
+    - null和undefined不能转为其他类型的值再比较
+    - NaN与任何不相等
+    - 指向同一对象相等，否则不
+### 赋值操作符 %= 、<<= 、>>=
+### 逗号操作符
+- let num = (5, 1, 4, 8, 0); // num的值为0，返回表达式最后一个值
+
+## 语句，流控制
+- do-while 后测试语句，至少执行一次
+- for循环
+    - 初始化，条件表达式，循环后表达式都不是必须的
+        - for(;;){} 无限循环
+    - 第三个，循环后执行后执行的表达式，一般是 i++，循环体执行了才会执行；
+- for-in： key
+    - 枚举对象中**非符号键**属性
+    - 循环遍历为null，undefined不执行循环体
+- for-of: value
+    - 遍历可迭代对象，如果不可迭代，会抛错
+- for-await-of
+    ```
+    async function* asyncGenerator() {
+        let i = 0;
+        while (i < 3) {
+            yield i++;
+        }
+    }
+
+    (async function() {
+        for await (let num of asyncGenerator()) {
+            console.log(num);
+        }
+    })();
+    // 0
+    // 1
+    // 2
+    ```
+- 标签语句 label: statement
+    - 可通过break或continue语句引用
+        - break直接跳出到标签位置
+        - continue 直接跳回标签位置
+    ```
+    start: for (let i = 0; i < count; i++) {
+        console.log(i);
+    }
+    ```
+- with(expression) statement; 
+    - 将代码作用域设置为特定对象
+    - 针对对一个对象反复操作的场景
+    - statement先找局部变量，在搜索expression下同名属性
+    - 严格模式不可用
+    ```
+    with(location) {
+        let qs = search.substring(1);
+        let hostName = hostname;
+        let url = href;
+    }
+    ```
+- switch
+    - break会跳出switch，不写 break 会继续匹配下一个条件，这时，最好加个注释，表示故意不写
+    - value1可以是变量或表达式求值
+    - 默认是对比 expression 和 value1，全等判断
+    - expression为布尔值true时，下面的case可以写其他表达式求值为true时，执行语句
+
+    ```
+    switch (expression) {
+        case value1:
+            statement
+            break;
+        case value2:
+            statement
+            break;
+        default:
+        statement
+    }
+    ```
+- 函数
+    - 严格模式，函数名或者参数不能是eval或者arguments，两个参数不可同名，否则会报错，不执行
 ---
 ---
 

@@ -3,6 +3,31 @@ class Emitter {
         this.publicParam = publicParam;
         this.asyncIdx = 0;
         this.idx = 0;
+        this[Symbol.toPrimitive] = function(hint) {
+            console.log(hint)
+            switch (hint) {
+                case 'number':
+                    return 1
+                case 'string':
+                    return 'stringBar';
+                case 'default':
+                default:
+                    return 'defaultBar';
+            }
+        };
+        /*
+        默认：
+            class Foo {};
+            let foo = new Foo();
+            3 + foo; // "3[object Object]"
+            3 - foo; // NaN
+            String(foo); // "3[object Object]"
+        自定义后：
+            const o = new Emitter();
+            3 + o; // default， "3defaultBar"
+            3 - o; // number，2
+            String(o); // string, stringBar 
+        */
     };
     // 只有这个有static
     static[Symbol.hasInstance](instance) {
