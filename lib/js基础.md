@@ -849,8 +849,306 @@ console.log(num2);   // -26
     - 其他均有，年（只能四位）月日，时分秒，甚至毫秒的获取和设置方法，包括UTC的
     - .getTimezoneOffset() 返回以分钟计的UTC与本地时区的偏移量（这个值一年中不是固定不变的）
 ## new RegExp()
+- 匹配模式的标记
+     - g：全局模式
+     - i：忽略大小写
+     - m：多行模式，表示查找到一行文本末尾时会继续查找。
+     - y：粘附模式，表示只查找从lastIndex开始及之后的字符串
+     - u: Unicode模式，启用Unicode匹配。
+     - s:dotAll模式，表示元字符．匹配任何字符（包括\n或\r）
+- 元字符 ( [ { \ ^ $ | ) ] } ? ＊ + . 需要转义
+### 两种声明方式
+1. 字面量`/[bc]at/i`
+2. 构造函数new RegExp(模式字符串, 标记字符串(可选)) `new RegExp("[bc]at", "i");`
+    - 模式字符串是字符串，有时候需要二次转义
+    ```
+    /\.at/  --  \\.at
+    /\d.\d{1,2}/ -- \\d.\\d{1,2}
+    ```
+    - 可以字面量生成后，作为构造函数的第一个参数，修改标记，生成一个新的正则
+### 实例
+- 实例属性
+    ```
+    let pattern1 = /\[bc\]at/i;
+    // 布尔值，是否全局搜索
+    console.log(pattern1.global); // false
+    // 布尔值，是否忽略大小写
+    console.log(pattern1.ignoreCase); // true
+    // 布尔值，是否启用Unicode匹配
+    console.log(pattern1.unicode); // false
+    // 布尔值，是否粘附模式
+    console.log(pattern1.sticky); // false
+    // 整数，表示下一次搜索的开始位置，始终从0开始
+    console.log(pattern1.lastIndex); // 0
+    // 布尔值，是否多行模式
+    console.log(pattern1.multiline); // false
+    // 布尔值，是否:dotAll模式，表示元字符．匹配任何字符（包括\n或\r）
+    console.log(pattern1.dotAll); // false
+    // 字符串，字面量字符串，没有前后斜杠
+    console.log(pattern1.source); // "\[bc\]at"
+    // 标记字符串
+    console.log(pattern1.flags); // "i"
+    ```
+- 实例方法
+    1. .exec(字符串) 配合捕获组使用
+        - 匹配，返回包含第一个匹配信息的数组
+            - 数组包括，index 0 是字符串中匹配模式的起始位置，input是要查找的字符串
+            - 第一个元素是匹配整个模式的字符串，其他为捕获组的字符串，没有捕获组数组只有一项
+            - 没有设置全局属性，操作幂等，每次返回第一个匹配的信息；有，则每次向前搜索，数组.index和实例.lastIndex会变，直到末尾
+            - 设置了粘附标记y，则每次调用exec()就只会在lastIndex的位置上寻找匹配项。**粘附标记覆盖全局标记。**
+                ```
+                let text = "cat, bat, sat, fat";
+                let pattern = /.at/y;
+                let matches = pattern.exec(text);
+                console.log(matches.index); // 0
+                console.log(matches[0]); // cat
+                console.log(pattern.lastIndex); // 3
+                // 以索引3 对应的字符开头找不到匹配项，因此exec()返回null
+                // exec()没找到匹配项，于是将lastIndex设置为0
+                matches = pattern.exec(text);
+                console.log(matches); // null
+                console.log(pattern.lastIndex); // 0
+                // 向前设置lastIndex可以让粘附的模式通过exec()找到下一个匹配项：
+                pattern.lastIndex = 5;
+                matches = pattern.exec(text);
+                console.log(matches.index); // 5
+                console.log(pattern.lastIndex); // 8
+                ```
+        - 不匹配，返回null
+    2. .test(字符串) 只关心是否匹配，不关注实际匹配内容（为啥不匹配）
+    3. .toString() 正则表达式的字面量字符串
+    4. .toLocaleString() 正则表达式的字面量字符串
+    5. valueOf() 正则表达式字面量
+### RegExp构造函数
+- 构造函数本身静态属性，根据**最后执行**的正则表达式操作而变化，没有标准，不建议直接使用
+- 可提取出与exec()和test()执行的操作相关的信息
+    ```
+    let text = "this has been a short summer";
+    let pattern = /(.)hort/g;
+    // 注意：Opera不支持简写属性名
+    // IE不支持多行匹配
+    if (pattern.test(text)) {
+        // 原始字符串
+        RegExp.$_ === RegExp.input; // this has been a short summer
+        // 匹配之前的内容
+        RegExp['$`'] === RegExp.leftContext; // this has been a
+        // 匹配之后的内容
+        RegExp["$'"] === RegExp.rightContext; // summer
+        // 匹配整个正则表达式的字符串
+        RegExp['$&'] === RegExp.lastMatch; // short
+        // 捕获组
+        RegExp['$+'] === RegExp.lastParen; // s
+    }
+    ```
+- RegExp.$1~RegExp.$9，存储最多9个捕获组的匹配项
 ## 原始值类型
+- 不同于其他引用类型，每当用到某个原始值的方法或属性时，后台都会创建一个相应原始包装类型的对象，从而暴露出操作原始值的各种方法
+- 创建相应原始值后，后续以读模式访问，这时候后台都会执行以下3步：
+    1. 创建一个String类型的实例；
+    2. 调用实例上的特定方法；
+    3. 销毁实例。
+- 生命周期，引用类型与原始值包装类型的主要区别在于对象的生命周期。
+    - 在通过new实例化引用类型后，得到的实例会在离开作用域时被销毁
+    - 自动创建的**原始值包装对象**则只存在于访问它的**那行代码执行期间**。
+- Object构造函数，能够根据传入值的类型返回相应原始值包装类型的实例，布尔值，数值一样
+    ```
+    let obj = new Object("some text");
+    console.log(obj instanceof String);   // true
+    ```
+- 使用new调用原始值包装类型的构造函数，与调用同名的转型函数并不一样
+- **以下三种类型中的方法，均可以创建原始值，用原始值直接调用，后台自动转；并且永远建议用字面量声明**
+### Boolean
+- `new Boolean(true)` 传入其他值，会被Boolean转为布尔值
+- .valueOf() 返回布尔值
+- .toString() 返回布尔值字符串
+### Number
+- `new Number(1)` 传入其他值，会被Number转为数值，无法转，就是NaN
+1. .valueOf() 返回原始数值
+2. .toString() 接受数值参数，默认10，返回相应基数形式字符串
+3. .toLocaleString() 返回字符串
+- 其他
+```
+let num = 10;
+// 返回指定小数点的数值字符串，四舍五入，通常支持0~20位小数点
+num.toFixed(2); // "10.00"
+// 返回指定小数位数的科学计数法的数值字符串
+num.toExponential(2); // 1.00e+1
+// 参数为数字的总位数（不包含指数），四舍五入，通常表示0~21位小数点
+// 本质上，toPrecision()方法会根据数值和精度来决定调用toFixed()还是toExponential()。
+num.toPrecision(1); //"1e+1"
+num.toPrecision(2); // "10"
+num.toPrecision(3); // "10.0"
+// 一个数值是否保存为整数, 小数全是0，也是小数
+Number.isInteger(1.00); // true
+// IEEE 754数值格式有一个特殊的数值范围, Number.MIN_SAFE_INTEGER（-253+ 1）到Number.MAX_SAFE_INTEGER（253-1）。对超出这个范围的数值，即使尝试保存为整数，IEEE 754编码格式也意味着二进制值可能会表示一个完全不同的数值。为了鉴别整数是否在这个范围内，可以使用Number.isSafeInteger()方法
+Number.isSafeInteger(2 ** 53); // false
+Number.isSafeInteger(2 ** 53 - 1); // true
+```
+### String
+1. .valueOf() 返回原始字符串
+2. .toString() 返回原始字符串
+3. .toLocaleString() 返回原始字符串
+4. .length
+    - 注意，即使字符串中包含双字节字符（而不是单字节的ASCII字符），也仍然会按单字符来计数
+    - JavaScript字符串由16位码元（code unit）组成。对多数字符来说，每16位码元对应一个字符。换句话说，字符串的length属性表示字符串包含多少16位码元
+5. 字符
+    - .charAt(num) - 返回指定位置的字符串，代理对无法正常显示；有代理对时，代理对当做两个点;只可识别16位
+    - .chartCodeAt(num) - 返回指定位置的码元；有代理对时，代理对当做两个点;只可识别16位
+    - String.fromCharCode() - 任意多个码元数值，返回拼接好的字符串
+    > 代理对
+    - codePointAt(num) - 有代理对时，代理对当做一个点，可识别32位和16位
+        - 如果传入的码元索引并非代理对的开头，就会返回错误的码点
+    - String.fromCodePoint() - 任意多个码元数值，返回拼接好的字符串
+
+    ```
+    String.fromCodePoint(0x1F60A)
+    String.fromCharCode(55357, 56842)
+    ```
+    - JavaScript字符串使用了两种Unicode编码混合的策略：UCS-2和UTF-16。对于可以采用16位编码的字符（U+0000~U+FFFF），这两种编码实际上是一样的。
+    - 16位足够表示，在Unicode中称为基本多语言平面（BMP）；
+    - 为了表示更多的字符，Unicode采用了一个策略，即每个字符使用另外16位去选择一个增补平面。这种每个字符使用两个16位码元的策略称为代理对。
+    - 码点是Unicode中一个字符的完整标识
+6. 格式化
+    - 起因：这三种方式显示相同却不相等
+    ```
+    String.fromCharCode(0x00C5);
+    String.fromCharCode(0x212B);
+    // U+004：大写拉丁字母A
+    // U+030A：上面加个圆圈
+    String.fromCharCode(0x0041, 0x030A);
+    ```
+    - 用同一种方式格式化，就可以比较是否相等；这种方式调用也不一定可以和原字符串相等
+    - Normalization Form D
+    str.normalize('NFD')
+    str.normalize('NFC')
+    str.normalize('NFKD')
+    str.normalize('NFKC')
+7. 操作字符串，不修改原字符串
+    - .concat()，接收任意多个参数，拼接成字符串；还不如用加号
+    - .slice(num1, num2)
+        - num1，字符串开始index；负数倒数，或加上length变正
+        - num2，字符串结束index，之前的；负数倒数，或加上length变正
+    - .substr(num1, num2)
+        - num1，字符串开始index；负数倒数，或加上length变正
+        - num2，返回的字符串长度；负数变0，返回空字符串
+    - .substring(num1, num2)
+        - num1，字符串开始index；负数倒数，或加上length变正
+        - num2，字符串结束index，之前的；负数变0
+        - .substring(num1, num2) 和 .substring(num2, num1) 都转化为正数以后一样，小起点，大重点
+8. 位置
+    - .indexOf(str[,num])，从num开始向后找，包括自身，所以循环找的时候要+1
+    - .lastIndexOf(str[,num])，从num开始向前找，包括自身
+    - num负数变0
+9. 包含
+    - .include(str[,num])，从num开始向后找，包括自身
+    - .startsWith(str[,num])，从num开始向后找，包括自身
+    - .endsWith(str[,num]), num表示字符串从头开始，长度为num的字符串为搜索范围
+10. 删除前后空格，不包括中间
+    .trim()
+    .trimLeft()
+    .trimRight()
+11. str.repeat(num) 把str重复num次，返回字符串
+12. 填充
+    .padStart(num[,str(默认空格)])
+    .padEnd(num[,str(默认空格)])
+    - str太长，填充长度后可截断
+    - num小于等于原字符串长度，返回原始字符串
+13. 迭代解构
+    ```
+    let message = "abc";
+    let stringIterator = message[Symbol.iterator]();
+    stringIterator.next()
+    ```
+    - 可for-of
+    - 可...展开
+14. 大小写
+    - .toLowerCase()
+    - .toLocaleLowerCase()
+    - .toUpperCase()
+    - .toLocaleUpperCase()
+    - .toLocaleLowerCase()和toLocaleUpperCase()方法旨在基于特定地区实现，比如土耳其语；大多数情况下一样
+15. 匹配
+    - .match(reg) 返回与 reg.exec(str) 一样
+    - .search(reg) 返回第一个匹配的位置索引或-1
+    - .replace(reg|str[,str|function]) 替换第一个匹配的字符串；全部替换，需要正则带全局标识 
+        - 例一，第二参数有匹配
+        ```
+        let text = "cat, bat, sat, fat";
+        const res = text.replace(/(.at)/g, 'word-$1');
+        // 全局模式匹配了多次，每次的$1
+        // "word-cat, word-bat, word-sat, word-fat"
+        /*
+            $$ 替换文本 $
+            $& 替换文本 RegExp.lastMatch
+            $' 替换文本 RegExp.rightContent
+            $` 替换文本 RegExp.leftContent
+            $n 替换文本 捕获组 0~9
+            $nn 替换文本 捕获组 01~99
+        */
+        ```
+        - 例二，第二参数为函数
+        ```
+        function htmlEscape(text) {
+            return text.replace(/[<>"&]/g, function(match, pos, originalText) {
+                // match与整个模式匹配的字符串、pos匹配项在字符串中的开始位置，以及originalText整个字符串
+                // 在有多个捕获组的情况下，每个匹配捕获组的字符串也会作为参数传给这个函数
+                switch (match) {
+                    case "<":
+                        return "&lt; ";
+                    case ">":
+                        return "&gt; ";
+                    case "&":
+                        return "&amp; ";
+                    case "\"":
+                        return "&quot; ";
+                }
+            });
+        }
+        console.log(htmlEscape("<p class=\"greeting\">Hello world! </p>"));
+        // "&lt; p class=&quot; greeting&quot; &gt; Hello world! </p>"
+        ```
+    - .split(str|reg[,num])
+        - num为数组大小，不可超过
+        ```
+        let colorText = "red, blue, green, yellow";
+        let colors1 = colorText.split(", "); // ["red", "blue", "green", "yellow"]
+        let colors2 = colorText.split(", ", 2); // ["red", "blue"]
+        // 注意中括号中的^表示取反
+        // 分隔符出现在最前面或者最后面，会多出一个空字符串
+        let colors3 = colorText.split(/[^, ]+/); // ["", ", ", ", ", ", ", ""]
+        ```
+16. 比较
+    - a.localeCompare(b)
+        - b在a前 1
+        - b在a后 -1
+        - b等于a 0
 ## 单例内置对象
+- ECMA-262对内置对象的定义是“任何由ECMAScript实现提供、与宿主环境无关，并在ECMAScript程序开始执行时就存在的对象”
+### Global
+- ECMA-262规定Global对象为一种兜底对象，它所针对的是不属于任何对象的属性和方法
+- 事实上，不存在全局变量或全局函数这种东西。在全局作用域中定义的变量和函数都会变成Global对象的属性
+- isNaN()、isFinite()、parseInt()和parseFloat()，实际上都是Global对象的方法
+1. URL编码方法
+    encodeURI() 只空格被替换为%20 
+    decodeURI() 只%20到空格
+    encodeURIComponent() 将所有非字母字符都替换成了相应的编码形式 
+    decodeURIComponent() 解码所有特殊值
+2. eval(str)
+    - str中可以调用外部作用域的内容
+    - str以let/const声明的变量外部不可用
+3. 浏览器将window对象实现为Global对象的代理
+    - 直接window.
+    - 或者 匿名函数直接调用返回this
+### Math
+Math.max(1,2,3,4)
+Math.ceil() 向上取整
+Math.round() 四舍五入
+Math.random() 取[0, 1)的随机数，不包含1
+- 加密这样用
+```
+var array = new Uint32Array(10);
+window.crypto.getRandomValues(array);
+```
 ---
 ---
 
