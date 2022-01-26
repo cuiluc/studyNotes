@@ -1151,6 +1151,368 @@ window.crypto.getRandomValues(array);
 ```
 ---
 ---
+# 集合引用类型
+- 表达式上下文（expression context）指的是期待返回值的上下文
+- 语句上下文（statement context）
+## Object
+- 属性名可以是字符串或数值
+- **数值属性会自动转换为字符串**
+- 字面量声明变量时，不会调用Object构造函数
+- 函数参数，最好必选用命名参数，对象封装多可选参数
+- 点语法存取，和中括号存取
+## Array
+- 其他语言不同的是，数组中每个槽位可以存储任意类型的数据
+### 创建
+1. new Array(param)
+    - 只传一个值
+        - param为数字，创建同样长度的数组 new Array(5) - [empty * 5]
+        - param为其他类型，只包含param的数组 new Array('a') - ['a']
+    - 多个值，new Array(1,2,3) - [1, 2, 3]
+    - 可以不写new
+2. 字面量，不会调用Array构造函数
+3. Array.from(param1[,param2[param3]])
+    - 将**类数组结构**转化为数组
+    - 浅拷贝
+    - param1一个类数组对象，即任何可迭代的结构，或者有一个length属性和可索引元素的结构(不一定要按照顺序都有，可以跳着声明，只收录length以内的)，如
+        - 字符串，返回['','']
+        - 集合Map，返回[\[v1,k1]，[v2,k2]]
+        - 映射Set，返回[v1,v2]
+        - 数组，浅复制
+        - 自定义的 Symbol.iterator 迭代器 *
+    - param2函数，用来增强新数组的值
+        ```
+        let a = [1, 2, 3]
+        Array.from(a, a => a ** 2) //  [1, 4, 9]
+        ```
+    - param3 用于指定映射函数中this的值, 在箭头函数中不适用
+4. Array.of(params)
+    - 将**一组参数**转化为数组
+    - Array.of(undefined) - [undefined]
+### 空位
+- 可以用一串逗号，创建空位(hole)，逗号之前当做空位
+- [,,,] length = 2
+- 空位当做undefined
+- ES6之前的方法，忽略空位 [1,,,3].map(()=>6) -  [6, empty × 2, 6]
+- 避免使用数组空位，要用显式用undefined代替。
+### 数组索引
+- 修改length可以从数组末尾删除或添加元素(用空位填)
+- 数组最多可以包含4294967295个元素，过长抛错 Invalid array length
+- 以这个最大值作为初始值创建数组，可能导致脚本运行时间过长的错误
+### 检查数组
+- xx instanceof Array，多框架时多个全局上下文不适用
+- Array.isArray() 返回布尔值
+### 迭代器
+1. arr.keys() 返回[数组索引1, 数组索引2]的迭代器
+1. arr.values() 返回[数组元素1, 数组元素2]的迭代器
+1. arr.keys() 返回[[索引, 值], [索引, 值]]的迭代器
+以上可for-of调用，或者Array.from()转成数组
+### 复制和填充
+1. arr.fill(fillContent[, startIndex[, endIndex]])填充数组
+    - startIndex，默认0，负值+length
+    - endIndex，默认length-1，负值+length
+    - 静默忽略超出数组边界（部分可用填充部分）、零长度及方向相反的索引范围
+    - 都包含开始索引，不包含结束索引
+    - 改变原数组，但不会大小
+1. arr.copyWithin(insertIndex[, startIndex[, endIndex]])填充数组
+    - insertIndex 插入位置，负值+length
+    - startIndex，默认0，负值+length
+    - endIndex，默认length-1，负值+length
+    - [startIndex, endIndex) 复制范围，去复制到插入位置
+    - 复制前不会被重写
+    - 静默忽略超出数组边界（部分可用填充部分）、零长度及方向相反的索引范围
+    - 都包含开始索引，不包含结束索引
+    - 改变原数组，但不会大小
+    ```
+    const arr = [1, 2, 3, 4, 5, 6, 7]
+    arr.copyWithin(2, 0, 4)
+    // [1, 2, 1, 2, 3, 4, 7]
+    ```
+### 转化方法
+1. arr.valueOf() 返回原数组
+2. arr.toString() 返回逗号分隔的字符串
+    - 用每个值调用toString，然后逗号拼接
+    - alert()期待字符串，会在后台调用toString
+3. arr.toLocaleString() 返回逗号分隔的字符串
+    - 用每个值调用toLocaleString，然后逗号拼接
+    - 可定义一个对象数组，每个对象自定义这个方法toString/toLocaleString
+4. arr.join(param) 
+    - 不传参数，或者传 undefined，使用逗号分隔
+    - 其他，转为字符串
+    - 数组，转为空字符
+> 某一项是null或undefined，在join()、toLocaleString()、toString()和valueOf()返回的结果中会以空字符串表示
+### 栈方法
+- 栈是一种后进先出（LIFO, Last-In-First-Out）的结构，也就是最近添加的项先被删除。
+- 以下都在栈底发生
+1. arr.push(param[, param...])
+    - 接收任意数量的参数，并将它们添加到数组末尾，返回数组的最新长度
+2. arr.pop()
+    - 用于删除数组的最后一项，同时减少数组的length值，返回被删除的项
+### 队列方法
+- 队列以先进先出（FIFO, First-In-First-Out）形式限制访问
+1. arr.unshift(param1[, ...param2])
+    - 在数组开头添加任意多个值，返回数组的最新长度
+    - 得到的数组[param1, param2] 按顺序
+2. arr.shift()
+    - 它会删除数组的第一项并返回它，然后数组长度减1
+### 排序方法
+1. arr.reverse() 改变原数组，反向，返回操数组引用
+2. arr.sort()
+    - 改变原数组
+    - 默认从小到大
+    - 返回操数组引用
+    - 不传值，会在每一项上调用String()转型函数，按照字符转排序， 意味着 10 在 5 前
+    - 传一个比较函数，比较函数接收两个参数，第一项为前一项的参数
+        - 如果第一个参数应该排在第二个参数前面，就返回负值
+        - 如果两个参数相等，就返回0
+        - 如果第一个参数应该排在第二个参数后面，要换位，就返回正值 val2 - val1
+### 操作方法
+1. arr.concat(param1[, ...param2])
+    - 不改变原数组，会创建副本
+    - 传入多个或一个数组，展开push；不是数组，直接push
+    - 可以通过设置 Symbol.isConcatSpreadable 
+        - true，强行打平类数组对象
+        - false，强行不打平数组
+2. arr.slice(startIndex[, endIndex])
+    - 不改变原数组，会创建副本
+    - 返回包含原数组[startIndex, endIndex)的数组
+    - startIndex 负值+length
+    - endIndex 不传默认到最后，负值+length
+    - 方向相反的索引范围返回空数组
+3. arr.splice(startIndex, deleteLength[, ...params])
+    - 两个参数，从startIndex开始，删除deleteLength个元素
+    - 插入deleteLength = 0，可插入多个，用逗号分隔，arr.splice(2,0, 'a', 'b')
+    - 替换deleteLength = 插入的个数，可插入多个，用逗号分隔，arr.splice(2,2, 'a', 'b')
+    - 改变原数组
+    - 返回包含删除元素的数组，没有返回空数组
+### 搜索和位置方法
+1. 按严格相等搜索
+    1. arr.indexOf(element[, startIndex])
+        - 从开始位置往后，返回索引/-1
+    2. arr.lastIndexOf(element[, startIndex])
+        - 从开始位置往前，返回索引/-1
+    3. arr.includes(element[, startIndex])
+        - 返回布尔值，表示是否至少找到一个指定元素的匹配的项
+        - ECMAscript7
+2. 按断言函数搜索
+    1. arr.find((element, index, arr) => {}[, 改变函数this])
+        - 返回第一个匹配的元素
+        - 找到即停
+    2. arr.findIndex((element, index, arr) => {}[, 改变函数this])
+        - 返回第一个匹配的元素的索引
+        - 找到即停
+### 迭代方法
+- 元素为对象的时候，可能更改原数组，其他不变原数组
+- 以下每一项都会循环到
+1. arr.every((element, index, arr) => {}[, 改变函数this])
+    - 每一项函数都返回true，返回true
+2. arr.filter((element, index, arr) => {}[, 改变函数this])
+    - 返回函数返回ture元素组成的新数组
+3. arr.forEach((element, index, arr) => {}[, 改变函数this])
+    - 每一项执行函数，没有返回值
+4. arr.map((element, index, arr) => {}[, 改变函数this])
+    - 返回每次函数调用的结果构成的数组
+5. arr.some((element, index, arr) => {}[, 改变函数this])
+    - 有一项函数都返回true，返回true
+### 归并方法
+- 迭代数组所有项，并在此基础上构建最终的返回值
+1. arr.reduce((prev,cur,index,arr)=>{}[, start])
+    - 从第一项到最后
+    - prev上一次归并值
+    - start
+        - 不传，第一次迭代从数组第二项开始
+1. arr.reduceRight((prev,cur,index,arr)=>{}[, start])
+    - 从最后到第一项
+    - 同上，方向相反
+## 定型数组
+### 背景
+    - 浏览器中增加了用于渲染复杂图形应用程序的编程平台，无须安装任何插件
+    - 新API被命名为WebGL（Web Graphics Library）
+    - 图形驱动程序API通常不需要以JavaScript默认双精度浮点格式传递给它们的数值，而这恰恰是JavaScript数组在内存中的格式。因此，每次WebGL与JavaScript运行时之间传递数组时，WebGL绑定都需要在目标环境分配新数组，以其当前格式迭代数组，然后将数值转型为新数组中的适当格式，而这些要花费很多时间。
+    - 定型数组可以直接传给底层图形驱动程序API，也可以直接从底层获取到
+### ArrayBuffer
+- 是所有定型数组及视图引用的基本单位
+- SharedArrayBuffer是ArrayBuffer的一个变体
+- 构造函数，可用于在内存中分配特定数量的字节空间
+```
+const buf = new ArrayBuffer(16); // 在内存中分配16 字节
+alert(buf.byteLength); // 16
+```
+- 可slice复制一个新的
+- 点
+    - 分配失败时会抛出错误
+    - ArrayBuffer分配的内存不能超过Number.MAX_SAFE_INTEGER（253-1）字节
+    - 声明ArrayBuffer则会将所有二进制位初始化为0
+    - 通过声明ArrayBuffer分配的堆内存可以被当成垃圾回收，不用手动释放
+### 视图
+1. Float32Array
+2. DataView
+    - 专为文件I/O和网络I/O设计，其API支持对缓冲数据的高度控制，但相比于其他类型的视图性能也差一些
+    - DataView对缓冲内容没有任何预设，也不能迭代。
+    1. 强制开发者在读、写时指定一个ElementType
+        - getInt8()/setInt8()
+    2. 字节序
+        - 指的是计算系统维护的一种字节顺序的约定。
+        - DataView只支持两种约定：大端字节序和小端字节序
+            - 大端字节序也称为“网络字节序”，意思是最高有效位保存在第一个字节，而最低有效位保存在最后一个字节
+            - 小端字节序正好相反，即最低有效位保存在第一个字节，最高有效位保存在最后一个字节
+        - DataView的所有API方法都以大端字节序作为默认值，但接收一个可选的布尔值参数，设置为true即可启用小端字节序
+    3. 边界情形DataView完成读、写操作的前提是必须有充足的缓冲区，否则就会抛出RangeError
+3. 定型数组
+    - 另一种形式的ArrayBuffer视图
+    - 目的就是提高与WebGL等原生库交换二进制数据的效率
+    - 由于定型数组的二进制表示对操作系统而言是一种容易使用的格式，JavaScript引擎可以重度优化算术运算、按位运算和其他对定型数组的常见操作，因此使用它们速度极快
+    - Int32Array, Int16Array, ElementType>.from()和<ElementType>.of()等都创建定型数组
+    - 定型数组的构造函数和实例都有一个BYTES_PER_ELEMENT属性，返回该类型数组中每个元素的大小
+    - 定型数组与普通数组都很相似，也有every()，fill()等
+    - 定型数组同样使用数组缓冲来存储数据，而数组缓冲无法调整大小；所以不能使用concat,pop等
+    - 新方法
+        - set()从提供的数组或定型数组中把值复制到当前定型数组中指定的索引位置
+        - subarray()执行与set()相反的操作，它会基于从原始定型数组中复制的值返回一个新定型数组。复制值时的开始索引和结束索引是可选的
+    - 定型数组中值的下溢和上溢不会影响到其他索引
+        - 下溢 转为无符号的等价位
+        - 上溢 转为二补位形式
+    - “夹板”数组类型：Uint8ClampedArray，不允许任何方向溢出。超出最大值255的值会被向下舍入为255，而小于最小值0的值会被向上舍入为0。HTML5canvas元素的历史留存，尽量不要用。
+## Map
+### 创建
+- new Map(); 可传入一个可迭代对象
+    ```
+    const m = new Map();
+    // 使用嵌套数组初始化映射
+    const m1 = new Map([
+        ["key1", "val1"],
+        ["key2", "val2"],
+        ["key3", "val3"]
+    ]);
+    m1.size; // 3
+    const m3 = new Map([
+        []
+    ]);
+    m3.has(undefined); // true
+    m3.get(undefined); // undefined
+    ```
+### 基础方法
+- m.size 返回映射键值对数量
+- m.get(key) 返回相应值
+- m.has(key) 返回是否有，布尔
+- m.set(key, value) 添加，返回映射实例，可以连续set；初始化是也返回实例，可以继续set
+- m.delete(key) 删除某一项
+- m.clear() 清除所有
+### 严格相等判断
+- 与Object只能使用数值、字符串或符号作为键不同，Map可以使用任何JavaScript数据类型作为键。
+- 独立的实例不会冲突
+- 在映射中用作键和值的对象及其他“集合”类型，指向不变即可，里面的内容变同步
+- 但 +0/'' ≠  -0/'' NaN，取同样的值
+- 但 +0 = -0 取同样的值
+### 顺序与迭代
+- Map实例会维护键值对的插入顺序，因此可以根据插入顺序执行迭代操作。
+1. m.entries === m[Symbol.iterator] 调用后，可以用for-of迭代，每一项[key1, value1]
+2. 可[...m] [[key1, value1],[key1, value1]]
+3. m.forEach((key, value)=>{}, 改变函数this)
+4. m.keys()可以用for-of迭代，每一项[key1]
+5. m.values()可以用for-of迭代，每一项[value1]
+6. 循环中，作为键的原始值修改静默失败，对象可改内容
+### Object or Map
+1. 内存占用Object和Map的工程级实现在不同浏览器间存在明显差异，但存储单个键/值对所占用的内存数量都会随键的数量线性增加。批量添加或删除键/值对则取决于各浏览器对该类型内存分配的工程实现。不同浏览器的情况不同，但给定固定大小的内存，Map大约可以比Object多存储50%的键/值对。
+2. 插入性能向Object和Map中插入新键/值对的消耗大致相当，不过插入Map在所有浏览器中一般会稍微快一点儿。对这两个类型来说，插入速度并不会随着键/值对数量而线性增加。如果代码涉及大量插入操作，那么显然Map的性能更佳。
+3. 查找速度与插入不同，从大型Object和Map中查找键/值对的性能差异极小，但如果只包含少量键/值对，则Object有时候速度更快。在把Object当成数组使用的情况下（比如使用连续整数作为属性），浏览器引擎可以进行优化，在内存中使用更高效的布局。这对Map来说是不可能的。对这两个类型而言，查找速度不会随着键/值对数量增加而线性增加。如果代码涉及大量查找操作，那么某些情况下可能选择Object更好一些。
+4. 删除性能使用delete删除Object属性的性能一直以来饱受诟病，目前在很多浏览器中仍然如此。为此，出现了一些伪删除对象属性的操作，包括把属性值设置为undefined或null。但很多时候，这都是一种讨厌的或不适宜的折中。而对大多数浏览器引擎来说，Map的delete()操作都比插入和查找更快。如果代码涉及大量删除操作，那么毫无疑问应该选择Map。
+## WeakMap
+- “weak”（弱），描述的是JavaScript垃圾回收程序对待“弱映射”中键的方式。
+- 弱映射中的键只能是Object或者继承自Object的类型，尝试使用非对象设置键会抛出TypeError。
+- 初始化是全有或者全无，一个无效的键，会抛错，导致初始化失败
+### 基础方法
+- m.get(key) 返回相应值
+- m.has(key) 返回是否有，布尔
+- m.set(key, value) 添加，返回映射实例，可以连续set；初始化是也返回实例，可以继续set
+- m.delete(key) 删除某一项
+### 弱键
+```
+const wm = new WeakMap();
+wm.set({}, "val");
+// 因为键没有其他引用的地方，会被垃圾回收，所以这行相当于没有执行
+```
+- 弱键代表集合中的引用不算，没了集合以外的引用，键值对会被回收
+- 因为WeakMap中的键/值对任何时候都可能被销毁，所以没必要提供迭代其键/值对的能力
+- 因为不可能迭代，所以也不可能在不知道对象引用的情况下从弱映射中取得值
+- 没有clear一次性销毁的方法
+- 为啥让用object为键，因为原始值，你判断不了，是否之前创建的
+
+- 实现真正私有变量的一种新方式。前提很明确：私有变量会存储在弱映射中，以对象实例为键，以私有成员的字典为值。用 闭包包起来外面就访问不了
+## Set
+### 创建
+- new Set(); 可传入一个可迭代对象
+    ```
+    const s = new Set();
+    // 使用嵌套数组初始化映射
+    const s1 = new Set(['val1', 'val2', 'val3']);
+    s1.size; // 3
+    ```
+### 基础方法
+- s.size 返回数量
+- s.has(val) 返回是否有，布尔
+- s.add(val) 添加，返回集合实例，可以连续set；初始化是也返回实例，可以继续set
+- s.delete(val) 删除某一项，返回是否存在要删除的值，有true
+- s.clear() 清除所有
+- **注意**
+    - add 和 delete 操作是幂等
+    - 以为用于数组去重[...(new Set([1,2,3,1])]
+### 顺序与迭代
+- Set实例会维护键值对的插入顺序，因此可以根据插入顺序执行迭代操作。
+1. s.values === s.keys === s[Symbol.iterator] 调用后可以用for-of迭代，每一项[value1]
+2. s.entries() 可以用for-of迭代，每一项[value1,value1]
+    - 可以按照插入顺序产生包含两个元素的数组，这两个元素是集合中每个值的重复出现
+3. s.forEach((key, value)=>{}, 改变函数this) key就是value
+4. 可[...m] [value1, value2]
+- 可用于数学集合计算
+## WeakSet
+- “weak”（弱），描述的是JavaScript垃圾回收程序对待“弱集合”中键的方式。
+- 弱映射中的值只能是Object或者继承自Object的类型，尝试使用非对象设置键会抛出TypeError。
+- 初始化是全有或者全无，一个无效的键，会抛错，导致初始化失败
+- 不属于正式的引用
+### 基础方法
+- s.has(value) 返回是否有，布尔
+- s.add(value) 添加，返回映射实例，可以连续set；初始化是也返回实例，可以继续set
+- s.delete(value) 删除某一项
+### 弱键
+```
+const wm = new WeakSet();
+wm.add({});
+// 因为键没有其他引用的地方，会被垃圾回收，所以这行相当于没有执行
+```
+- 因为WeakSet中的值对任何时候都可能被销毁，所以没必要提供迭代其值对的能力
+- 也用不到delete
+- 因为不可能迭代，所以也不可能在不知道对象引用的情况下从弱集合中取得值
+- 为啥让用object为键，因为原始值，你判断不了，是否之前创建的
+## 迭代与扩展操作
+- Array、所有定型数组、Map、Set定义了默认迭代器
+- 可用[...xx]浅复制
+- 对于期待可迭代对象的构造函数，只要传入一个可迭代对象就可以实现复制
+    ```
+    let map1 = new Map([[1, 2], [3, 4]]);
+    let map2 = new Map(map1);
+    console.log(map1); // Map {1 => 2, 3 => 4}
+    console.log(map2); // Map {1 => 2, 3 => 4}
+    ```
+- 上面的这些类型都支持多种构建方法，比如Array.of()和Array.from()静态方法。在与扩展操作符一起使用时，可以非常方便地实现互操作
+    ```
+    let arr1 = [1, 2, 3];
+    // 把数组复制到定型数组
+    let typedArr1 = Int16Array.of(...arr1);
+    let typedArr2 = Int16Array.from(arr1);
+    console.log(typedArr1);    // Int16Array [1, 2, 3]
+    console.log(typedArr2);    // Int16Array [1, 2, 3]
+    // 把数组复制到映射
+    let map = new Map(arr1.map((x) => [x, 'val' + x]));
+    console.log(map);    // Map {1 => 'val 1', 2 => 'val 2', 3 => 'val 3'}
+    // 把数组复制到集合
+    let set = new Set(typedArr2);
+    console.log(set);    // Set {1, 2, 3}
+    // 把集合复制回数组
+    let arr2 = [...set];
+    console.log(arr2);   // [1, 2, 3]
+    ```
+---
+---
 
 # Promise
 1. new Promise() 不可以，必须提供一个处理函数，哪怕是空函数 new Promise(()=>{})
