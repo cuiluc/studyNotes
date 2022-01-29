@@ -1160,6 +1160,18 @@ window.crypto.getRandomValues(array);
 - 字面量声明变量时，不会调用Object构造函数
 - 函数参数，最好必选用命名参数，对象封装多可选参数
 - 点语法存取，和中括号存取
+### 基础
+- 对象，散列表
+#### 属性类型
+- 用双中括号包住名称，来表示描述属性的特性
+1. 数据属性
+    - 特性
+        - \[[Configurable]] 表属性是否可被delete并重新定义，是否可改特性，是否可改为访问器属性。默认，直接定义在对象的属性的为true
+        - 
+2. 访问器属性
+### 创建对象
+### 继承
+### 类
 ## Array
 - 其他语言不同的是，数组中每个槽位可以存储任意类型的数据
 ### 创建
@@ -1514,6 +1526,104 @@ wm.add({});
 ---
 ---
 
+# 迭代器和生成器
+- “迭代”的意思是**按照顺序**反复**多次**执行一段程序，通常会有**明确的终止条件**
+## 迭代器模式
+- 即有些实现了**正式的Iterable接口**“**可迭代对象**”（iterable），而且可以**通过迭代器Iterator消费**。
+- **任何实现Iterable接口的数据结构**都可以被实现**Iterator接口的结构“消费”（consume）**。
+- 迭代器（iterator）是按需创建的**一次性对象**。
+- 每个迭代器都会关联一个**可迭代对象**，而迭代器会暴露迭代其关联可迭代对象的API。迭代器无须了解与其关联的可迭代对象的结构，只需要知道如何取得连续的值。这种概念上的分离正是Iterable和Iterator的强大之处。
+### 可迭代协议，即实现可迭代对象
+- 实现Iterable接口（可迭代协议）要求同时具备两种能力：
+    - 支持迭代的自我识别能力
+    - 创建实现Iterator接口的对象的能力。
+- 调用实例的，如字符串 str[Symbol.iterator] 可知是否实现了迭代器工厂函数
+- str[Symbol.iterator]()调用迭代器工厂函数，可以生成一个迭代器（实例），原生的这个实例可以继续不断调用[Symbol.iterator]()，此时是幂等的，只会返回最初生成的实例
+- 原生： for-of，数组解构，扩展操作符，Array.from()，集合，映射， Promise.all()/race() 接受有期约组成的迭代器，yield*
+    - 原生语言解构会在后台调用提供的迭代器工厂函数
+    - 迭代器也实现了Iterable接口
+- 父类实现了Iterable接口，子类也会
+### 迭代器协议，即消费可迭代对象
+- 迭代器Api使用next()调用，返回 IteratorResult({done: false/true, value: value/undefined}), done-true代表耗尽，后面及时push也无法重新开启，没有done-true前可
+- 每个迭代器都是一次性有序遍历，互相不影响；
+- 也无法快照，值是游标记录可迭代对象的历程；
+- 会维护一个指向可迭代对象的引用，阻止垃圾回收
+```
+let arr = ['foo', 'baz'];
+let iter = arr[Symbol.iterator]();
+iter.next(); // { done: false, value: 'foo' }
+// 在数组中间插入值
+arr.splice(1, 0, 'bar');
+iter.next(); // { done: false, value: 'bar' }
+iter.next(); // { done: false, value: 'baz' }
+iter.next(); // { done: true, value: undefined }
+```
+### 自定义迭代器
+- 可调用 .next() 连续调用的类
+### 提前终止迭代器
+- return()方法用于指定在迭代器提前关闭时执行的逻辑。比如，
+    - for-of循环通过break、continue（没调用return）、return或throw提前退出；
+    - 解构操作并未消费所有值。
+- 方法必须实现 IteratorResult， done true，可以没有value
+- [Symbol.iterator]返回对象中包括，next方法和next方法
+
+- 如果迭代器不能关闭，他就可以继续迭代，比如数组，创建一个迭代器实例，第一个循环break后，继续循环会调用剩下的，没有跳过
+- 给不能关闭的迭代器实例，增加return方法不会让迭代器进入关闭状态，但是会调用
+## 生成器
+- 函数块内暂时和恢复代码执行的能力
+- function前加 *，省略function关键字时，写在函数名前，箭头函数不能定义生成器
+- 标记生成器函数的*不受两侧空格影响
+- 调用生成器函数生成一个**生成器对象**，开始处于暂停执行（suspended）状态，只进去状态没有执行里面任何东西。生成器对象实现了Iterator接口，可用next()；可以用for-of调用
+- 生成器函数 return的值，作为最终done-true的value值
+- return或者执行到最后一行会退出生成器对象                                      
+### yield控制开始、暂停
+- 只有生成器中可以用
+- yield 右侧的作为本次调用的next()的valuez值；yield接收下次启动的next中传递的参数
+- 星号增强 yield*，实际是将一个**可迭代对象**（任何）化为一连串可以单独产出的值 如yield * [1,2,3] 相当于 yield 1; yield 2;yield 3
+    - yield* 实现递归
+    ```
+    function* nTime(n) {
+        if (n > 0) {
+            yield* nTime(n - 1)
+            yield n - 1;
+        }
+    }
+    for (const x of nTime(3)) {
+        console.log(x); // 0 1 2
+        // 如果 n-1放到递归上面，打印是 2 1 0
+    }
+    ```
+- 可用来实现自定义类的默认迭代器 class xx{ *[Symbol.iterator]{} }
+### 提前终止生产器
+1. return()
+    - return(val) val作为终止迭代器对象的值
+    - 一旦关闭，无法恢复
+    - for-of等内置语言结构会忽略状态为done:true的 IteratorObject 内部返回的值
+    ```
+    function* gen() {
+        yield*[1, 2, 3];
+    };
+    const g = gen();
+
+    g.return(4); // {done: true, value: 4}
+    ```
+2. throw() 错误未处理，生成器就会关闭
+    ```
+    function* gen() {
+        for (const x of[1, 2, 3]) {
+            try {
+                yield x
+            } catch (error) {
+                console.log(error)
+            }
+        }
+    };
+    const g = gen();
+    g.next(); // {done: false, value: 1}
+    // 书上说 foo会作为vaule抛出，但是当前来看{done: false, value: 2}
+    g.throw('foo')
+    g.next() // {done: false, value: 3}
+    ```
 # Promise
 1. new Promise() 不可以，必须提供一个处理函数，哪怕是空函数 new Promise(()=>{})
 2. Promise 的状态一旦改变，后面都会改变
