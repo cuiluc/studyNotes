@@ -1164,11 +1164,54 @@ window.crypto.getRandomValues(array);
 - 对象，散列表
 #### 属性类型
 - 用双中括号包住名称，来表示描述属性的特性
-1. 数据属性
-    - 特性
-        - \[[Configurable]] 表属性是否可被delete并重新定义，是否可改特性，是否可改为访问器属性。默认，直接定义在对象的属性的为true
-        - 
+1. 数据属性，特性
+    - \[[Configurable]] 表属性是否可被delete并重新定义，是否可改特性，是否可改为访问器属性。默认，直接定义在对象的属性的为true；如果修改默认属性，不指定为false
+    - \[[Enumerable]]：表示属性是否可以通过for-in循环返回。默认，直接定义在对象的属性的为true；如果修改默认属性，不指定为false
+    - \[[Writable]]：表示属性的值是否可以被修改。默认，直接定义在对象的属性的为true；如果修改默认属性，不指定为false
+    - \[[Value]]：包含属性实际的值。这就是前面提到的那个读取和写入属性值的位置。这个特性的默认值为undefined。
 2. 访问器属性
+  - \[[Configurable]]：表示属性是否可以通过delete删除并重新定义，是否可以修改它的特性，以及是否可以把它改为数据属性。默认情况下，所有直接定义在对象上的属性的这个特性都是true。
+  - \[[Enumerable]]：表示属性是否可以通过for-in循环返回。默认情况下，所有直接定义在对象上的属性的这个特性都是true。
+  - \[[Get]]：获取函数，在读取属性时调用。默认值为undefined。
+  - \[[Set]]：设置函数，在写入属性时调用。默认值为undefined。
+
+  - 可以只定义获取函数，表示只读，修改无效，严格模式报错；只定义设置函数，表示不可读取，读取undefined，严格模式报错；
+3. 设置属性特性
+    - 修改默认属性需要使用Object.defineProperty(obj, key, {描述对象})
+    - Object.defineProperties(obj, {key1: {描述对象1}, key2: {描述对象2}})
+4. 读取属性特性
+    - Object.getOwnPropertyDescriptor(obj, key)，返回单个属性的描述对象
+    - Object.getOwnPropertyDescriptors(obj)，返回所有属性的描述对象，{key1: {描述对象1}, key2: {描述对象2}}
+5. 合并对象/混入(mixin) Object.assign(target, o1, o2...)
+    - 接受一个目标对象，和多个源对象
+    - 将每个源对象中可枚举（Object.propertyIsEnumerable()返回true）和自有（Object.hasOwnProperty()返回true）属性复制到目标对象
+    - 使用源对象上的\[[Get]]，目标对象的\[[Set]]
+    - 修改目标对象，同时返回修改后的目标对象
+    - 浅复制
+    - 多个源对象拥有相同属性，使用最后一个
+    - 不能在两个对象间转移获取函数和设置函数，获取函数过去变成静态值
+    - 复制期间报错，抛错，不会回滚；部分复制过去的，基本都是写入在报错属性之前的
+6. 相等判断, Object.is(v1, v2)
+    - 解决-0 === +0 === 0 全等判断都为true；NaN判断问题
+        ```
+        Object.is("1", 1) \\ false
+
+        Object.is(NaN, NaN) \\ true
+
+        Object.is(+0, -0) \\ false
+        Object.is(+0, 0) \\ true
+        Object.is(-0, +0) \\ false
+        ```
+    - 检查多个值，是否相等，依次向后比较
+        ```
+        function recursivelyCheckEqual(x, ...rest) {
+            // rest.length < 2 即只有两个需要比较的 x, rest[0]
+            // >= 2，向后比较
+            return Object.is(x, rest[0]) &&
+                (rest.length < 2 || recursivelyCheckEqual(...rest));
+        }
+        ```
+
 ### 创建对象
 ### 继承
 ### 类
