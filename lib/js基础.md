@@ -1176,13 +1176,15 @@ window.crypto.getRandomValues(array);
   - \[[Set]]：设置函数，在写入属性时调用。默认值为undefined。
 
   - 可以只定义获取函数，表示只读，修改无效，严格模式报错；只定义设置函数，表示不可读取，读取undefined，严格模式报错；
-3. 设置属性特性
-    - 修改默认属性需要使用Object.defineProperty(obj, key, {描述对象})
-    - Object.defineProperties(obj, {key1: {描述对象1}, key2: {描述对象2}})
-4. 读取属性特性
-    - Object.getOwnPropertyDescriptor(obj, key)，返回单个属性的描述对象
-    - Object.getOwnPropertyDescriptors(obj)，返回所有属性的描述对象，{key1: {描述对象1}, key2: {描述对象2}}
-5. 合并对象/混入(mixin) Object.assign(target, o1, o2...)
+
+#### 对象基础方法
+- 设置属性特性
+    - 修改默认属性需要使用`Object.defineProperty(obj, key, {描述对象})`
+    - `Object.defineProperties(obj, {key1: {描述对象1}, key2: {描述对象2}})`
+- 读取属性特性，只对实例属性有效
+    - `Object.getOwnPropertyDescriptor(obj, key)`，返回单个属性的描述对象
+    - `Object.getOwnPropertyDescriptors(obj)`，返回所有属性的描述对象，{key1: {描述对象1}, key2: {描述对象2}}
+- 合并对象/混入(mixin) `Object.assign(target, o1, o2...)`
     - 接受一个目标对象，和多个源对象
     - 将每个源对象中可枚举（Object.propertyIsEnumerable()返回true）和自有（Object.hasOwnProperty()返回true）属性复制到目标对象
     - 使用源对象上的\[[Get]]，目标对象的\[[Set]]
@@ -1191,7 +1193,8 @@ window.crypto.getRandomValues(array);
     - 多个源对象拥有相同属性，使用最后一个
     - 不能在两个对象间转移获取函数和设置函数，获取函数过去变成静态值
     - 复制期间报错，抛错，不会回滚；部分复制过去的，基本都是写入在报错属性之前的
-6. 相等判断, Object.is(v1, v2)
+    - 枚举属性确定，先升序数值键，然后以插入书匈奴字符串和符号键
+- 相等判断, `Object.is(v1, v2)`
     - 解决-0 === +0 === 0 全等判断都为true；NaN判断问题
         ```
         Object.is("1", 1) \\ false
@@ -1211,10 +1214,211 @@ window.crypto.getRandomValues(array);
                 (rest.length < 2 || recursivelyCheckEqual(...rest));
         }
         ```
-
+- 增强对象
+    - 支持字面量声明对象使用中括号（计算属性表达式），当作js表达式求值 obj = { [xx]: xx }；中间报错，不能回滚
+    - 简写方法(匿名函数)和计算数学表达式结合 obj= {[xx](){}}
+- 解构复制，数组/对象；浅复制；中间报错，不能回滚
+    - 解构在内部调用ToObject()(不能在运行环境直接访问)把源解构转化为对象，即在对象解构上下文中，原始值被当作了对象；根据ToObject的定义，null和undefined不能解构，否则报错
+       - let {length} = 'foobar'; 
+    - 如果事先声明了变量，则赋值表达式必须包含在一对括号里 let personName; ({name: personName} = {obj})
+    - 赋值目标无限制 let tar = {}; ({name: tar.name} = {obj})
+    - 可以在函数参数表中使用
+- 判断是否原型对象 `CreateObj.prototype.isPrototypeOf(obj)` true
+- 判断是否原型对象 `obj instanceof CreateObj.prototype` true
+- 返回原型对象 `Object.getPrototypeOf(obj) === CreateObj.prototype` true
+- 设置原型对象 `Object.setPrototypeOf(target, source); Object.getPrototypeOf(target) === source`，会涉及所有访问了修改过\[[prototype]]对象的代码，造成性能下降，应避免使用
+- `Object.create(param)` param为null，创建的新对象无原型链；其他，为新对象原型
+    - 第二个参数 {key1: {描述对象1}, key2: {描述对象2}} 
+- `obj.hasOwnProperty('name')` true说明name属性来自于实例
+- `'name' in obj` 在原型上或实例上都返回true，和上面的方法结合可判断是否在原型上的属性
+- `Object.keys(obj)` 返回对象上所有可枚举的**实例**属性，不包含原型对象；枚举顺序不一定，取决于js引擎
+- `Object.getOwnPropertyNames(obj)` 返回所有实例属性，无论是否可枚举；不包含符号为键的属性名，其实符号为键的属性没有名称概念；枚举属性确定，先升序数值键，然后以插入书匈奴字符串和符号键
+> 以上两种适当时候可用for-in替代；枚举顺序不一定，取决于js引擎
+- `Object.getOwnPropertySymbols(obj)` 返回符号为键的属性名；枚举属性确定，先升序数值键，然后以插入书匈奴字符串和符号键
+- `Object.keys(obj)` 返回属性值数组
+- `Object.entries(obj)` 返回[属性名，属性值]数组
+> 以上两个**非字符串属性名称**会转化为字符串输出；浅复制；符号属性会被忽略
 ### 创建对象
+1. 工厂模式 function cretatObj(name, age){ return {name, say(){ return this.name }}} 直接方法调用接受
+    - 问题：没有解决对象标识问题
+2. 构造函数模式  function CretatObj(name, age){ this.name = name; this.say = function (){ return this.name } }  
+    - 使用new创建实例
+        - 在内存中创建一个新对象
+        - 新对象的\[[Prototype]]被赋值为构造函数的prototype属性
+        - this指向新对象
+        - 手动返回非空对象则返回该对象，否则返回刚创建的新对象
+    - obj1.constructor === CretatObj
+    - obj1 instanceof CretatObj // true，同时也是Object的实例
+    - new的时候可以不加括号
+    - 可以不加括号当作方法使用，this指向Global
+    - 问题：同一方法创建多次
+3. 原型模式  每个函数都会创建 prototype 对象，包含应该由特定引用类型的实例共享的属性和方法
+    - function CretatObj(){}; CretatObj.prototype.name = name; CretatObj.prototype.say = function (){ return this.name }
+    ![原型图](../images/prototype.png)
+    - 其实实例没有访问\[[prototype]]的标准方式，但 Firefox,Safari和Chrome会在每个对象上暴露 __proto__属性，直接访问对象原型。
+    - Object原型的原型是null；Object是构造函数，其原型对象拥有各种方法；
+    - 在实例上添加属性，会`遮蔽(shadow)`原型对象上的同名属性
+    - 实例和原型的关系是松散的，重写构造函数原型，之前创建的实例用的依然会引用最初的原型
+    - 问题：引用值类型，在实例之间共享
 ### 继承
+- 很多面向对象的语言都支持两种继承：接口继承和实现继承。前者只继承方法签名，后者继承实际的方法。\
+- 原型链
+    - CretatObj.prototype = {} 以字面量形式创建原型，会破坏之前的原型链
+    - 缺点： 
+        - 父类的实例变成子类的原型
+        - 子类无法给父类传参
+1. 盗用构造函数
+    - 在子类方法中调用父类构造函数 `function SubType(){SuperType.call(this);}`
+    - 可解决引用值问题，不同实例之间不干扰；可传参
+    - 问题：子类无法访问父类原型上的方法
+2. 组合继承
+    - 原型链继承原型上的属性和方法 SubType.prototype = new SuperType()
+    - 盗用构造函数继承实例属性
+
+    - 可识别是否父类的实例
+3. 原型式继承
+    ```
+    function object(o) {
+        function F() {}
+        F.prototype = o;
+        return new F();
+    }
+    ```
+    - 创建临时构造函数，并将传入的对象当作构造函数的原型，同Object.create()
+    - 适合不需要单独创建构造函数，但仍然需要信息共享
+4. 寄生式继承
+    - 创建实现继承的函数，以某种方式增强对象，然后返回对象
+    ```
+    function createAnother(source) {
+        let clone = object(source);
+        clone.sayHi = function () {
+            console.log('hi');
+        }
+        return clone;
+    }
+    ```
+    - 适合主要关注对象，而不在乎类型和构造函数的场景
+5. 寄生式组合继承
+    - 解决父类构造函数始终会被调用两次： 一次是创建子类原型时调用；一次在子类构造函数调用。
+    - 不通过父类构造函数给子类原型赋值，而是取父类原型的一个副本，`SubType.prototype = SuperType.prototype`之后再在子类的原型上增加子类的方法。
 ### 类
+#### 定义
+1. 类声明 class Person{}
+2. 类表达式 const Person = class {}
+    ```
+    const Person = class PersonName {
+        id() {
+            console.log(Person.name) // 'PersonName'
+            console.log(PersonName.name) // 'PersonName', PersonName在外部不可访问
+        }
+    }
+    ```
+- 两种方式均不可提升
+- 函数受函数作用域限制，类受块级作用域限制
+- 默认情况下，类定义中的代码都在严格模式下执行
+- 类可包含
+    - 构造函数方法 constructor(){}
+        - new时，调用时当作构造函数（但是不能用instanceof 检测）。非必须，不定义相当于空函数
+        - 实例化时，
+            1. 在内存中创建一个新对象。
+            2. 新对象内部的\[[Prototype]]指针指向构造函数的prototype属性。
+            3. this指向新对象
+            4. 执行构造函数内部的代码，给新对象添加属性。
+            5. 如果构造函数返回非空对象，则返回该对象（之前给this赋值没有了，同时instanceof 不能检查和类的关系）；否则，返回刚创建的新对象。
+        - 实例化时，可以不加括号
+        - 必须使用new实例化，否则报错；构造函数可以当普通函数
+        - 构造函数方法可以直接调用 Person.constructor() 返回对象
+        - let p1 = new Person() 可 let p2 = new p1.constructor()
+    - 实例方法 
+    - 获取函数 get
+    - 设置函数 set
+    - 静态类方法 static xx(){}
+- typeof Person   // function
+- 可立即实例化，前加 new，后加括号传参
+#### 成员
+1. 实例成员
+    - 每个实例都对应唯一的成员对象，不会在原型上共享。在构造函数方法中，通过this点的方式添加
+2. 原型方法与访问器
+    - 在类中直接定义的方法 `const Person = class { xx() {}}`，都会定义在类的原型中
+    - 只能定义方法，不能在类快中给原型添加原始值活对象作为成员
+    - 可以中括号[js表达式]
+    - 支持获取和设置访问器
+3. 静态类方法
+    - 用static修饰的方法，定义在类本身上；只能通过类名调用，实例和原型上不存在，所以可以定义与静态方法同名的，不会遮盖
+    - 适合做实例工厂，自己返回所在类的实例
+4. 非函数原型和类成员
+    - Person.a = ''
+    - Person.prototype.b = ''
+    - 不建议，共享目标上添加可变的数据成员，是反模式的
+5. 迭代器与生成器方法
+    - 支持将原型方法`* xx(){}`或静态类方法`static *xx(){}`定义为生成器方法，调用后，用next继续调用
+    - 支持添加默认迭代器`*[Symbol.iterator](){}`把**类实例**变成可迭代对象，可用for-of直接迭代实例
+    - 也可直接在`[Symbol.iterator](){}`返回可迭代实例
+#### 继承
+- 背后依然使用的原型链
+- 使用 extends 支持单继承，可制成任何拥有\[[Constructor]]和原型的对象，即可继承普通的构造函数`class Person extends Array` 或者 `let Person = class extends Array`
+- super() 只能在派生类中使用
+    1. 写构造函数方法时，
+        - 必须调用 super()，相当于 super.constructor()，否则报错
+        - 使用this前必须调用，否则报错
+        - 不调用调用 super()，必须手动返回一个对象，但是不能给this赋值
+    2. 静态方法时，super.父类静态方法()，super代表父类
+    3. 注意
+        - 除了以上两种情况，不能单独引用super
+        - 会调用父类的构造函数，并将返回的实例赋值给this
+        - 可在super调用中给父类传参
+        - 不写构造函数方法时，会将所有传给子类的参数传给父类；写就要自己传参
+- 巧用
+    - 可在构造函数方法中，用 new.target === 父类名称时，抛错，阻止对抽象类的实例化
+    - 因为原型方法在调用构造函数方法前就存在，可在抽象类中检查子类是否具有某种方法
+- 继承内置类型
+    - 继承数组
+        - 不写 constructor，自动收集参数，变成数组；写了就要自己收集，不然就是对象
+        - 默认内置方法，返回实例的类型与原始实例的类型一致， Symbol.species可覆盖
+        ```
+        const SuperArr = class extends Array {
+            static get [Symbol.species]() {
+                return Array
+            }
+        }
+        let a1 = new SuperArr(1, 2, 3, 4);
+        let a2 = a1.filter(x => x > 2);
+        a1 instanceof SuperArr; // true
+        a2 instanceof SuperArr; // 默认ture，Symbol.species修改后，false
+        ```
+- 类混入，C-B-A的顺序继承
+    - 方法一，定义一组可嵌套函数，每个函数分别定义超类作为参数，注意基类是表达式
+        ```
+        class Vehicle {}
+        let AMixin = (Superclass) => class extends Superclass {
+            a() {
+                console.log('a');
+            }
+        };
+        let BMixin = (Superclass) => class extends Superclass {
+            b() {
+                console.log('b');
+            }
+        };
+        let CMixin = (Superclass) => class extends Superclass {
+            c() {
+                console.log('c');
+            }
+        };
+        class Bus extends AMixin(BMixin(CMixin(Vehicle))) {}
+        let obj = new Bus();
+        obj.a();   // a
+        obj.b();   // b
+        obj.c();   // c
+        ```
+    - 方法二，组合
+        ```
+        function mix(BaseClass, ...Mixins) {
+            return Mixins.reduce((accumulator, current) => current(accumulator), BaseClass);
+        }
+        class Bus extends mix(Vehicle, AMixin, BMixin, CMixin)
+        ```
+    - **组合胜于继承**
 ## Array
 - 其他语言不同的是，数组中每个槽位可以存储任意类型的数据
 ### 创建
@@ -1667,6 +1871,72 @@ iter.next(); // { done: true, value: undefined }
     g.throw('foo')
     g.next() // {done: false, value: 3}
     ```
+# 代理与反射
+- 提供了拦截并向基本操作嵌入额外行为的能力。 目标对象 ---- 处理程序 ---> （抽象的）代理对象
+- 无可替代，不存在后备代码
+## 代理基础
+- （抽象的）代理对象为目标对象的替身，目标对象可直接操作也可以通过代理操作，但是直接操做会绕过代理行为
+### 创建空对立
+- new Proxy(目标对象, 处理程序对象) 返回代理对象
+- const proxy = new Proxy(target, {}) **所有**代理对象执行的操作都会应用到目标对象，比如，hasOwnProperty
+- 严格模式可以区分代理和目标， proxy === target 为 false
+### 定义捕获器
+- 使用代理的主要目的可定义捕获器（trap）。
+- 捕获器就是处理程序对象定义中定义的“基本操作拦截器”。
+- 每个处理程序对象可定义零个或多个捕获器，每个捕获器都对应一种基本操作，可以直接或间接在代理对象上调用。
+- 每次在代理对象上调用这些基本操作时，代理可以在这些操作传播到目标对象之前先调用捕获器函数，从而拦截并修改相应的行为
+```
+const target = {
+  foo: 'bar'
+};
+const handler = {
+  // 捕获器在处理程序对象中以方法名为键
+  get() {
+    return 'handler override';
+  }
+};
+const proxy = new Proxy(target, handler);
+target.foo;   // bar
+proxy.foo;  // handler override
+Object.create(target)['foo'];   // bar
+Object.create(proxy)['foo'];    // handler override
+```
+- get接受三个参数 目标对象，要查询的属性，代理对象
+### 反射API
+- 开发者并不需要手动重建原始行为，而是可以通过调用全局Reflect对象上（封装了原始行为）的同名方法来轻松重建。
+- 处理程序对象中所有可以捕获的方法都有对应的反射（Reflect）API方法。这些方法与捕获器拦截的方法具有相同的名称和函数签名，而且也具有与被拦截方法相同的行为。即Reflect有的，即可捕获的方法。
+- 创建空代理
+    - 方法一
+        ```
+        const target = {
+            foo: 'bar'
+        };
+        const handler = {
+        // 捕获器在处理程序对象中以方法名为键
+            get() {
+                return Reflect.get(...arguments);
+            }
+        };
+        const proxy = new Proxy(target, handler);
+        ```
+    - 方法二
+        ```
+        const handler = {
+            get: Reflect.get
+        };
+        ```
+    - 方法三，每个方法都转发给对应反射API的空代理
+        ```
+        const proxy = new Proxy(target, Reflect);
+        ```
+    - 可直接修饰返回值 return Reflect.get(...arguments) + 'xxx';
+## 代理基础
+
+# 函数
+- 改变this指向
+    - fn.call(obj, param1, param2, param3)
+    - fn.aplay(obj, [param1, param2, param3])
+    - fn.bind(obj, param1, param2, param3) 返回新函数
 # Promise
 1. new Promise() 不可以，必须提供一个处理函数，哪怕是空函数 new Promise(()=>{})
 2. Promise 的状态一旦改变，后面都会改变
