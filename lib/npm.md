@@ -12,22 +12,4 @@
 ## npm镜像
 nrm ls 查看镜像
 nrm use ** 切换镜像
----
----
-
-
-# git
-## github中fork了别人的分支，如何更新
-1. 将自己的代码 clone下来
-2. 执行下面操作
-```
-// 查看当前状态
-git remote -v
-// 添加关联
-git remote add upstream gitUrl
-// 再次确认
-git remote -v
-// 将提交 push 上自己的分支即可
-```
-
 
