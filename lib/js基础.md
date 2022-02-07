@@ -2334,6 +2334,41 @@ new proxy;
     - fn.call(obj, param1, param2, param3)
     - fn.aplay(obj, [param1, param2, param3])
     - fn.bind(obj, param1, param2, param3) 返回新函数
+## 函数声明
+### 函数声明 
+- function xx(){} 最后没有分号
+### 函数表达式 
+- let xx = function(){} 最后有分号
+### 箭头函数
+- let xx = () => {}
+### Function构造函数 不推荐
+- `let sum = new Function("num1", "num2", "return num1 + num2"); `
+    - 接收任意多个字符串参数，最后一个参数始终会被当成函数体，而之前的参数都是新函数的参数
+- 不推荐使用这种语法来定义函数，因为这段代码会被解释两次：
+    - 第一次是将它当作常规ECMAScript代码
+    - 第二次是解释传给构造函数的字符串。这显然会影响性能。
+- 不过，把函数想象为对象，把函数名想象为指针是很重要的
+## 函数名
+
+## 参数
+### 默认参数
+### 扩展参数
+### 收集参数
+## 函数内部
+### arguments
+### this
+### caller
+### new.target
+
+## 函数属性和方法
+
+## 函数应用
+### 函数作为值
+### 递归
+### 尾调用优化，已废弃
+### 闭包
+### 立即调用函数表达式
+### 私有变量
 # Promise
 1. new Promise() 不可以，必须提供一个处理函数，哪怕是空函数 new Promise(()=>{})
 2. Promise 的状态一旦改变，后面都会改变
