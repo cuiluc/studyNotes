@@ -2330,17 +2330,26 @@ new proxy;
 6. 类作为目标对象，在construct中可收集实例，在set中可发送消息
 
 # 函数
-- 改变this指向
-    - fn.call(obj, param1, param2, param3)
-    - fn.aplay(obj, [param1, param2, param3])
-    - fn.bind(obj, param1, param2, param3) 返回新函数
 ## 函数声明
 ### 函数声明 
 - function xx(){} 最后没有分号
+- 函数声明提升
+    - JavaScript引擎在加载数据时对它们是区别对待的。JavaScript引擎在**任何代码执行之前**，会先读取函数声明，并在执行上下文中生成函数定义。
+    - 所以可在声明前调用，因为函数声明会在任何代码执行之前先被读取并添加到执行上下文。
+    - 在执行代码时，JavaScript引擎会先执行一遍扫描，把发现的函数声明提升到源代码树的顶部
+- 不可在不同的条件中声明同样的函数名称，因为函数声明提升会混乱，浏览器处理方式不一样；这种情况应该用函数表达式
 ### 函数表达式 
 - let xx = function(){} 最后有分号
+- 必须等到代码执行到它那一行，才会在执行上下文中生成函数定义
+- 函数返会一个函数，不管直接调用还是用变量储存都算是函数表达式
+> 函数声明 和 函数表达式的区别只有 函数什么时候真正有定义
+#### 其中，匿名函数（兰姆达函数）function关键字后面没有标识符
 ### 箭头函数
 - let xx = () => {}
+    - 一个参数不需要括号，一个参数有默认值时也需要括号，零个或多个需要
+    - 省略大括号会隐式返回
+    - 不能使用 arguments、super和new.target，也不能用作构造函数。
+    - 没有prototype属性
 ### Function构造函数 不推荐
 - `let sum = new Function("num1", "num2", "return num1 + num2"); `
     - 接收任意多个字符串参数，最后一个参数始终会被当成函数体，而之前的参数都是新函数的参数
@@ -2348,27 +2357,317 @@ new proxy;
     - 第一次是将它当作常规ECMAScript代码
     - 第二次是解释传给构造函数的字符串。这显然会影响性能。
 - 不过，把函数想象为对象，把函数名想象为指针是很重要的
-## 函数名
 
+## 函数名
+### 函数名.name
+- 指向函数的指针
+- 暴露一个只读的name属性，保存函数标识符
+- 函数中返回的匿名函数，用变量接收，name依然为空字符串
+    ```
+    function foo() { }
+    foo.name // foo
+    let bar = function () { };
+    bar.name // bar
+    let baz = () => { };
+    baz.name // baz
+    (() => {}).name;  //（空字符串）
+    ```
+- 构造函数new Function() - anonymous `(new Function()).name;  // anonymous`
+- 使用bind实例化
+    ```
+    function foo() {}
+    foo.bind(null).name // bound foo
+    ```
+- 获取函数、设置函数
+    ```
+    let dog = {
+        years: 1,
+        get age() {
+            return this.years;
+        },
+        set age(newAge) {
+            this.years = newAge;
+        }
+    }
+    let propertyDescriptor = Object.getOwnPropertyDescriptor(dog, 'age');
+    console.log(propertyDescriptor.get.name);   // get age
+    console.log(propertyDescriptor.set.name);   // set age
+    ```
+- 函数名只和定义时有关
+    ```
+    let bar = function () { };
+    let a = bar;
+    bar = null;
+    a.name // bar
+
+    // xx 外部访问不到只有函数内部可以使用
+    let baz = function xx () { };
+    baz.name // xx
+    ```
+### 函数名.length
+- fn(a,b,c){} fn.length = 3
+- 有默认值之前的命名参数的个数，默认值会破坏计算
+## 没有重载 
+- 在其他语言比如Java中，一个函数可以有两个定义，只要签名（接收参数的类型和数量）不同就行
+- ECMAScript函数没有签名，因为参数是由包含零个或多个值的数组表示的。没有函数签名，自然也就没有重载
 ## 参数
+- 按值传递，对象只是引用
+### arguments
+- arguments是类数组对象，但不是Array实例
+- arguments长度**只和**调用时有关
+- 命名参数是方便才写的，非必须，可直接用arguments
+- 没有默认值时，
+    - 有传参的命名参数，会和对应的arguments保持同步
+    - 不传，或者有默认值，都不会保持同步
+    - 内存还是分开的
+    - 严格模式
+        - 不会同步
+        - 重写arguments导致语法错误
+- 不反映默认值
 ### 默认参数
-### 扩展参数
+- 可以是js表达式
+- 函数的默认参数**只有在函数被调用时**才会求值，不会在函数定义时求值
+- 计算默认值的函数**只有在调用函数但未传相应参数时**才会被调用
+- 作用域与暂时性死区
+    - 只能后面的引用前面的，不可反
+    - 不可引用函数体的作用域
+    - (a = 1, b = a) 那么 b = 1
+    - (a, b = a) 那么 b 等调用时，确定默认值
+### 扩展参数 fn(...list)
+- 以前 fn.apply(null, list)
+- 可l连续使用fn(...[1,2,3], ...list, ...[1,2,3])
 ### 收集参数
+- 必须放到最后一个参数 (a, ...list)
+- Array实例
+- 没有空数组
+- 不影响 arguments
+    ```
+    function fn(...list) { 
+        list // [1,2,3]
+        arguments // [1,2,3]
+    }
+    fn(1,2,3)
+    ```
 ## 函数内部
 ### arguments
+- 包含调用函数时传入的所有参数
+- callee属性，是一个指向arguments对象所在函数的指针。
+    - 如阶乘例子，就算factorial被赋值给其他变量，又置为null用callee可以正确执行
+        ```
+        function factorial(num) {
+            if (num <= 1) {
+                return 1;
+            } else {
+                // return num * factorial(num -1);
+                return num * arguments.callee(num -1);
+            }
+        }
+        ```
+    - 在严格模式下, 访问arguments.callee会报错
+- ECMAScript 5有 arguments.caller，但在严格模式下访问它会报错，在非严格模式下则始终是 undefined
+- 每个函数有自己的arguments，内层函数想访问外层的，必须用另外的变量名去接
 ### this
+#### 标准函数 
+- 把函数当成方法**调用的上下文对象**，
+- 全局函数中调用，在非严格模式下等于window，在严格模式下等于undefined
+- 匿名函数不会绑定到某个对象，这就意味着this会指向window，在严格模式下等于undefined
+- 改变指向
+    1. fn.call(obj, param1, param2, param3)
+    2. fn.apply(obj, [param1, param2, param3])
+        - 后面这个数组，也可以是 arguments 比如传入外层函数的值
+
+    -  call和apply区别在于传参方式而已，看哪个方便喽
+    -  好处是可以将任意对象设置为任意函数的作用域，这样对象可以不用关心方法
+    -  在严格模式下，调用函数时如果没有指定上下文对象，则this值不会指向window。除非使用apply()或call()把函数指定给一个对象，否则this的值会变成undefined
+    3. fn.bind(obj, param1, param2, param3) 返回新函数，不调用
+- 例子一
+    ```
+    window.identity = 'The Window';
+    let object = {
+        identity: 'My Object',
+        getIdentityFunc() {
+            return function() {
+                return this.identity;
+            };
+        }
+    }
+    ```
+    - **object.getIdentityFunc()**() 为 'The Window'
+    - 前面有点才算是调用者，这种不算，因为函数已经属于windows了
+- 例子二
+    ```
+    window.identity = 'The Window';
+    let object = {
+        identity: 'My Object',
+        getIdentityFunc() {
+            return this.identity;
+        }
+    }
+    ```
+    - object.getIdentity();  // 'My Object'
+    - (object.getIdentity)();   // 'My Object'
+    - (object.getIdentity = object.getIdentity)();   // 'The Window' 
+        - 赋值表达式的值是函数本身，this不在和任何值绑定
+        - var a = 1; // undefined   a = a // 1
+
+#### 箭头函数
+- **定义箭头函数的上下文**
 ### caller
+- 调用当前函数的**函数**，或者如果是在**全局作用域**中调用的则为**null**
+    ```
+    function outer() {
+        inner();
+    }
+    function inner() {
+        console.log(inner.caller); // 返回 outer 函数整体
+        // inner可以用 arguments.callee表示
+    }
+    outer();
+    ```
+- 在严格模式下
+    - ECMAScript 5有 arguments.caller，但在严格模式下访问它会报错，在非严格模式下则始终是 undefined 。是为了分清arguments.caller和函数的caller而故意为之的。
+    - 作为对这门语言的安全防护，这些改动也让第三方代码无法检测同一上下文中运行的其他代码。
+    - 不能给函数的caller属性赋值，否则会导致错误。
+
 ### new.target
-
-## 函数属性和方法
-
+- 函数直接调用为undefined
+- 函数new时，一般是构造函数，会引用被调用的构造函数
+## 函数prototype属性是不可枚举的，for-in不出来
+- toLocaleString()和toString()始终返回函数的代码，具体格式因浏览器而异，有的返回源代码，包含注释，而有的只返回代码的内部形式，会删除注释，甚至代码可能被解释器修改过。由于这些差异，因此不能在重要功能中依赖这些方法返回的值，而只应在调试中使用它们。
+- 继承的方法valueOf()返回函数本身
 ## 函数应用
-### 函数作为值
+### 函数作为值 参数或者返回值(匿名时，name会一直为'')
 ### 递归
+- 常规
+    ```
+    function factorial(num) {
+        if (num <= 1) {
+            return 1;
+        } else {
+            // 常规
+            return num * factorial(num - 1);
+            // 可防止factorial变为其他值，但严格模式不可用
+            return num * arguments.callee(num -1);
+        }
+    }
+    ```
+- **命名函数表达式**，f只可以在函数体内访问，最外层可以不加()
+    ```
+    let fac = (function f(num) {
+        if (num <= 1) {
+            return 1;
+        } else {
+            // 常规
+            return num * f(num - 1);
+            // 可防止factorial变为其他值
+            return num * arguments.callee(num -1);
+        }
+    })
+    ```
 ### 尾调用优化，已废弃
+#### 优化
+function outerFunction() {
+  return innerFunction(); // 尾调用
+}
+- 优化前
+    （1）执行到outerFunction函数体，第一个栈帧被推到栈上。
+    （2）执行outerFunction函数体，到return语句。计算返回值必须先计算innerFunction。
+    （3）执行到innerFunction函数体，第二个栈帧被推到栈上。
+    （4）执行innerFunction函数体，计算其返回值。
+    （5）将返回值传回outerFunction，然后outerFunction再返回值。
+    （6）将栈帧弹出栈外。
+- 优化后
+    （1）执行到outerFunction函数体，第一个栈帧被推到栈上。
+    （2）执行outerFunction函数体，到达return语句。为求值返回语句，必须先求值innerFunction。
+    （3）**引擎发现把第一个栈帧弹出栈外也没问题，因为innerFunction的返回值也是outerFunction的返回值**。
+    （4）弹出outerFunction的栈帧。
+    （5）执行到innerFunction函数体，栈帧被推到栈上。
+    （6）执行innerFunction函数体，计算其返回值。
+    （7）将innerFunction的栈帧弹出栈外
+#### 条件
+❑ 代码在严格模式下执行；
+❑ 外部函数的返回值 是对 尾调用函数的调用；
+❑ 尾调用函数 返回后 不需要执行额外的逻辑；
+❑ 尾调用函数 **不是引用** 外部函数作用域 中 自由变量的闭包。
+```
+function outerFunction(a, b) {
+  // 销毁前执行的
+  return innerFunction(a + b);
+}
+
+function outerFunction(condition) {
+  // 都在尾部
+  return condition? a1() : a2();
+}
+```
+### 优化斐波那契数列
+- 无优化因为返回语句中有一个相加的操作。结果，fib(n)的栈帧数的内存复杂度是O(2n）
+    ```
+    function fib(n) {
+        if (n < 2) {
+            return n;
+        }
+        return fib(n -1) + fib(n -2);
+    }
+    ```
+- 可以使用两个嵌套的函数，外部函数作为基础框架，内部函数执行递归
+    ```
+    "use strict";
+    // 基础框架
+    function fib(n) {
+        return fibImpl(0, 1, n);
+    }
+    // 执行递归
+    function fibImpl(a, b, n) {
+        if (n === 0) {
+            return a;
+        }
+        return fibImpl(b, a + b, n -1);
+    }
+    ```
 ### 闭包
-### 立即调用函数表达式
+- 正常情况
+    - 函数
+        1. 在**定义函数**时，就会为它**创建作用域链**，**预装载全局变量对象**，并保存在内部的\[[Scope]]中。
+        2. 在**调用**这个函数时，会创建相应的执行上下文，然后通过**复制**函数的\[[Scope]]来创建其作用域链。
+        3. 接着会**创建函数的活动对象**（用作变量对象）并将其推入作用域链的前端。
+        - 作用域链其实是一个包含指针的列表，每个指针分别指向一个变量对象，但物理上并不会包含相应的对象。
+    - **调用**一个函数
+        1. 在调用一个函数时，会为这个函数调用创建一个执行上下文，并创建一个**作用域链**。
+        2. 用arguments和其他命名参数来初始化这个函数的**活动对象**。
+        3. **外部函数的活动对象**是内部函数作用域链上的第二个对象。
+        4. 这个作用域链一直向外串起了所有包含函数的活动对象，直到全局执行上下文才终止。
+    - 注意
+        - 全局上下文中的叫**变量对象(全局变量对象)**，它会在代码执行期间**始终存在**。
+        - 而函数局部上下文中的叫**活动对象(局部变量对象)**，只在函数执行期间存在。
+- 闭包
+    - 正常函数执行完毕后，局部活动对象会被销毁，内存中就只剩下全局作用域。
+    - 因为匿名函数的作用域链中仍然有对外部函数活动变量的引用，导致并不能在它执行完毕后销毁
+    - 在create-ComparisonFunction()执行完毕
+### 防止内存泄漏
+- 引用COM对象，最好将想要的值拿出来，再把引用COM对象的变量变为null
+### 立即调用函数表达式，IIFE,Immediately Invoked Function Expression）
+```
+(function() {
+  // 块级作用域
+})();
+
+// 用来锁定值
+let divs = document.querySelectorAll('div');
+for (var i = 0; i < divs.length; ++i) {
+  divs[i].addEventListener('click', (function(a) {
+    return function () {
+      console.log(a);
+    }
+  })(i));
+}
+```
+- 现在直接用let，为每个循环创建独立的变量，从而让每个单击处理程序都能引用特定的索引。
+- 如果把变量声明拿到for循环外部，那就不行了
 ### 私有变量
+- 私有变量包括函数参数、局部变量，以及函数内部定义的其他函数。
+    - 特权方法（privileged method）是能够访问函数私有变量（及私有函数）的公有方法
+- 特权方法可以使用 构造函数（每个实例都会重建方法） 或 原型模式（私有变量和私有函数由实例共享） 通过自定义类型中实现，也可以使用 模块模式 或 模块增强模式在单例对象（只增强单例） 上实现。
 # Promise
 1. new Promise() 不可以，必须提供一个处理函数，哪怕是空函数 new Promise(()=>{})
 2. Promise 的状态一旦改变，后面都会改变
