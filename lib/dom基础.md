@@ -459,3 +459,189 @@ observer.takeRecords() // []
         - 记录队列中的每个MutationRecord实例至少包含对已有DOM节点的一个引用。如果变化是childList类型，则会包含多个节点的引用。
         - 记录队列和回调处理的默认行为是耗尽这个队列，处理每个MutationRecord，然后让它们超出作用域并被垃圾回收。
         - 有时候可能需要保存某个观察者的完整变化记录。保存这些MutationRecord实例，也就会保存它们引用的节点，因而会妨碍这些节点被回收。如果需要尽快地释放内存，建议从每个MutationRecord中抽取出最有用的信息，然后保存到一个新对象中，最后抛弃MutationRecord。
+---
+---
+# DOM 拓展
+- 两个标准： Selectors API 与 HTML5
+- 一个规范： ElementTraversal规范
+
+## Selectors API标准
+- 根据css选择器匹配元素
+- 在兼容浏览器中，Document类型 和 Element类型的实例 上都会暴露这两个方法
+- 可以在Document、DocumentFragment和Element类型上使用
+    - 选择符有语法错误或碰到不支持的选择符，会抛出错误
+### Selectors API Level 1规范
+1. .querySelector('CSS选择符字符串')
+    - 返回第一个匹配的后代元素，无null
+    - Document上，从文档元素开始搜索；在Element上，只会从当前元素的后代中查询
+    - documnet.querySelector('body')
+    - documnet.body.querySelector('img.btn')
+2. .querySelectorAll('CSS选择符字符串')
+    - 返回NodeList的静态实例；无，空的NodeList实例
+    - 静态的“快照”，而非“实时”的查询。此底层实现避免了使用NodeList对象可能造成的性能问题
+    - 返回值可for-of，可以用item(index)/[index]取个别元素
+## Selectors API Level 2规范
+1. el.matches('CSS选择符字符串')
+    - 元素匹配则该选择符返回true，否则返回false
+    - documnet.body.matches('body.page1') // true/false
+    - 可以方便地检测某个元素会不会被querySelector()或querySelectorAll()方法返回
+    - 所有主流浏览器都支持matches()。Edge、Chrome、Firefox、Safari和Opera完全支持，IE9~11及一些移动浏览器支持带前缀的方法
+2. el.find() 尚未有浏览器实现或宣称实现
+3. el.findAll() 尚未有浏览器实现或宣称实现
+
+## HTML5标准
+- 以前是一个纯标记语言
+### CSS类扩展
+### 自定义数据属性
+#### 获取元素 el.getElementsByClassName('类名， 多个用 空格相隔')
+- 如果提供了多个类名，则顺序无关紧要
+- 返回s所有包含相应类的元素NodeList
+- 类名不加.
+- document.getElementsByClassName('a b c')
+- 如果要给包含特定类（而不是特定ID或标签）的元素添加事件处理程序，使用这个方法会很方便
+- IE9及以上版本，以及所有现代浏览器都支持
+#### 操作类名
+1. el.className 获取/设置
+    - el.className = ' a b c'
+    - el.className //  a b c
+2. el.classList
+    - 是一个新的集合类型DOMTokenList的实例
+    - .length / .item[index] / [index]
+    - DOMTokenList还增加了以下方法:
+        1. el.classList.add（value），向类名列表中添加指定的字符串值value。如果这个值已经存在，则什么也不做。
+        2. el.classList.contains（value），返回布尔值，表示给定的value是否存在。
+        3. el.classList.remove（value），从类名列表中删除指定的字符串值value。
+        4. el.classList.toggle（value），如果类名列表中已经存在指定的value，则删除；如果不存在，则添加。
+    - el.classList.remove('a') 不影响其他类名
+    - 除非是完全删除或完全重写元素的class属性，否则className属性就用不到了
+    - IE10及以上版本（部分）和其他主流浏览器（完全）实现了classList属性。
+### 焦点管理
+- 页面加载时，可以通过用户输入（按Tab键或代码中使用focus()方法）让某个元素自动获得焦点
+1. document.activeElement，始终包含当前拥有焦点的DOM元素
+    - 默认情况下，在页面刚加载完之后会设置为document.body。在页面完全加载之前，为null。
+2. el.focus() 让某个元素获取焦点
+3. document.hasFocus()，该方法返回布尔值，表示文档是否拥有焦点
+    - 可以确定用户是否在操作页面。
+- 有利于无障碍Web应用程序，因为一个重点就是焦点管理
+### HTMLDocument 扩展
+1. document.readyState
+    - loading，表示文档正在加载； complete，表示文档加载完成
+    - 可以不再依赖onload，即可判断文档是否加载完
+2. document.compatMode 检测页面渲染模式
+    - 标准模式，"CSS1Compat"；在混杂模式，BackCompat"
+3. document.head 直接取head元素
+    - document.body
+### 字符集属性 document.characterSet
+- 表示文档实际使用的字符集，也可指定新字符集
+- 默认值是"UTF-16"
+- 可以通过 \<meta>元素 或 响应头，以及新增的 characterSeet属性 来修改
+### 自定义数据属性
+1. 非标准属性，需要用 data-xx
+    - 以便告诉浏览器，这些属性既不包含与渲染有关的信息，也不包含元素的语义信息
+    - <div id="myDiv" data-appId="12345"></div>
+    - data-myname/data-myName 用 myname访问；data-my-name/data-My-Name 用 myName访问。第二个横杠的第一个字母是大写，其余都会转小写
+2. el.dataset.xx 访问
+    - 是一个DOMStringMap的实例，包含一组键/值对映射
+    - el.dataset.appId
+- 适合需要给元素附加某些数据的场景，比如链接追踪和在聚合应用程序中标识页面的不同部分。另外，单页应用程序框架也非常多地使用了自定义数据属性。
+### 插入标记
+#### el.innerHTML
+1. 返回元素所有后代的HTML字符串，包括元素、注释和文本节点。返回的值浏览器实现不一致，如空格等
+2. 写入时，根据提供的字符串值以新的DOM子树替代元素中原来包含的所有节点
+    - 赋值会被解析为DOM子树，并替代元素之前的所有节点。
+        - 因为所赋的值默认为HTML，所以其中的所有标签都会以浏览器处理HTML的方式转换为元素（同样，转换结果也会因浏览器不同而不同）
+        - 如果赋值中不包含任何HTML标签，则直接生成一个文本节点
+    - 设置完，立即可以用
+3. 所有现代浏览器中，通过innerHTML插入的\<script>标签是不会执行的
+4. IE8以前，script标签带defer属性/style标签（非受控元素 script/style/注释，即页面上看不到），之前(即兄长标签)如果是受控元素，是可以执行的
+    - 如果只有非受控元素，innerHTML会干掉非受控开始的内容
+    - 前面加_ / 前面加非空标签，哪怕是标签中间为空格 / <input type="hidden">可执行
+- Firefox在内容类型为application/xhtml+xml的XHTML文档中对innerHTML更加严格。在XHTML文档中使用innerHTML，必须使用格式良好的XHTML代码。否则，在Firefox中会静默失败
+- 暴露给用户时，一定要做好隔离和防止xss攻击
+#### el.outerHTML
+1. 返回值包括 el.innerHTML + el本身
+2. 写入，也会干掉el本身
+#### el.insertAdjacentHTML(position, htmlStr) 与 el.insertAdjacentText(position, htmlStr)
+1. 参数1， 插入位置position
+    - "beforebegin"，插入当前元素前面，作为前一个同胞节点，相当于相对于<p>
+    - "afterbegin"，插入当前元素内部，作为新的子节点或放在第一个子节点前面，相当于相对于<p>
+    - "beforeend"，插入当前元素内部，作为新的子节点或放在最后一个子节点后面，相当于相对于</p>
+    - "afterend"，插入当前元素后面，作为下一个同胞节点，相当于相对于</p>
+    > 注意这几个值是不区分大小写的
+2. 参数2 要插入的HTML或文本
+    - 作为HTML字符串解析（与innerHTML和outerHTML相同）或者作为纯文本解析（与innerText和outerText相同）
+    - 如果是HTML，则会在解析出错时抛出错误
+- 如
+    ```
+    element.insertAdjacentHTML("beforebegin", "<p>Hello world! </p>");
+    element.insertAdjacentText("beforebegin", "Hello world! ");
+    ```
+#### 内存问题
+- 以上操作替换子节点可能在浏览器（特别是IE）中导致内存问题。
+    - 比如被移除的元素还有关联的事件处理程序或其他JavaScript对象（作为元素的属性），那它们之间的绑定关系会滞留在内存中。如果频繁操作，内存占用太多
+    - 在使用innerHTML、outerHTML和insertAdjacentHTML()之前，**最好**手动删除要被替换的元素上关联的事件处理程序和JavaScript对象
+- 插入大量的新HTML使用innerHTML比使用多次DOM操作创建节点再插入来得更便捷。这是因为HTML解析器会解析设置给innerHTML（或outerHTML）的值。解析器在浏览器中是底层代码（通常是C++代码），比JavaScript快得多。不过，HTML解析器的构建与解构也不是没有代价，因此最好限制使用innerHTML和outerHTML的次数
+### el.scrollIntoView()
+- 存在于所有HTML元素上，可以滚动浏览器窗口或容器元素以便包含元素进入视口。
+- 这个方法的参数如下：
+    - alignToTop是一个布尔值。
+        - true：窗口滚动后元素的顶部与视口顶部对齐。
+        - false：窗口滚动后元素的底部与视口底部对齐。
+    - scrollIntoViewOptions是一个选项对象。
+        - behavior：定义过渡动画，可取的值为"smooth"和"auto"，默认为"auto"。
+        - block：定义垂直方向的对齐，可取的值为"start"、"center"、"end"和"nearest"，默认为"start"。
+        - inline：定义水平方向的对齐，可取的值为"start"、"center"、"end"和"nearest"，默认为"nearest"。
+    -  不传参数等同于alignToTop为true。
+```
+document.forms[0].scrollIntoView();
+document.forms[0].scrollIntoView(true);
+document.forms[0].scrollIntoView({behavior: 'smooth', block: 'start'});
+```
+## ElementTraversal规范
+- IE9之前的版本不会把元素间的空格当成空白节点，而其他浏览器则会。导致了childNodes和firstChild等属性上的差异,为此，同时不影响DOM规范，W3C通过新的Element Traversal规范定义了一组新属性。
+- Element Traversal API为DOM元素添加了5个属性：
+    1. parentEle.childElementCount，返回子元素数量（不包含文本节点和注释）
+    2. parentEle.firstElementChild，指向第一个Element类型的子元素（Element版firstChild）
+    3. parentEle.lastElementChild，指向最后一个Element类型的子元素（Element版lastChild）
+    4. parentEle.previousElementSibling，指向前一个Element类型的同胞元素（Element版previousSibling）
+    5. parentEle.nextElementSibling，指向后一个Element类型的同胞元素（Element版nextSibling）
+    - IE9及以上版本，以及所有现代浏览器都支持Element Traversal属性
+## 专有拓展 某个浏览器专有
+### el.children
+- 是一个HTMLCollection，只包含元素的Element类型的子节点。如果元素的子节点类型全部是元素类型，那children和childNodes中包含的节点应该是一样的。
+### 元素间关系
+#### el1.contains(el2)
+- el2是el1的后代，返回true，否则返回false
+- document.documentElement.contains(document.body)
+#### el1.compareDocumentPosition(el2)
+- DOM Level 3 的方法，可以确定节点间的关系
+- 返回表示两个节点关系的位掩码
+    - 0x1 断开，不在文档中
+    - 0x2 领先，el2在el1之前
+    - 0x4 随后，el2在el1之后
+    - 0x8 包含，el2是el1祖先
+    - 0x10 被包含，el2是el1后代
+- document.documentElement.compareDocumentPosition(document.body)  // 20（或0x14，其中0x4表示“随后”，加上0x10“被包含”）
+### 插入标记
+#### el.innerText
+- innerText属性对应元素中包含的所有文本内容，无论文本在子树中哪个层级。
+1. 在用于读取值时，innerText会按照深度优先的顺序将子树中所有文本节点的值拼接起来。
+    - 注意不同浏览器对待空格的方式不同，因此格式化之后的字符串可能包含也可能不包含原始HTML代码中的缩进。
+2. 在用于写入值时，innerText会移除元素的所有后代并插入一个包含该值的文本节点
+    - 设置innerText会移除元素之前所有的后代节点，完全改变DOM子树
+    - 设置innerText也会编码出现在字符串中的HTML语法字符（小于号、大于号、引号及和号）
+- div.innerText = div.innerText; 执行后，容器元素的内容只会包含原先的文本内容
+#### el.outerText
+- 同上，不过会包含el本身/删除el本身
+```
+div.outerText = "Hello world! ";
+// 相当于
+let text = document.createTextNode("Hello world! ");
+div.parentNode.replaceChild(text, div);
+```
+### 滚动
+- 虽然HTML5把scrollIntoView()标准化了，但不同浏览器中仍然有其他专有方法。
+- 比如，el.scrollIntoViewIfNeeded()
+    - 作为HTMLElement类型的扩展可以在所有元素上调用
+    - scrollIntoViewIfNeeded(alingCenter)会在元素不可见的情况下，将其滚动到窗口或包含窗口中，使其可见；如果已经在视口中可见，则这个方法什么也不做。
+    - 如果将可选的参数alingCenter设置为true，则浏览器会尝试将其放在视口中央。Safari、Chrome和Opera实现了这个方法。
