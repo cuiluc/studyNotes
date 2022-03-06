@@ -1,0 +1,23 @@
+# JavaScript
+- 完整的JavaScript包含以下三部分
+ - 核心（ECMAScript）： ECMA-262定义并提供和核心供能
+    - JavaScript和ECMAScript基本上是同义词
+    - 即ECMA-262定义的语言，并不局限于Web浏览器。
+    - 事实上，这门语言没有输入和输出之类的方法。
+    - Web浏览器只是ECMAScript实现可能存在的一种宿主环境（host environment）。
+    - 宿主环境提供ECMAScript的基准实现和与环境自身交互必需的扩展。
+    - 扩展（比如DOM）使用ECMAScript核心类型和语法，提供特定于环境的额外功能。
+    - 其他宿主环境还有服务器端JavaScript平台Node.js和即将被淘汰的Adobe Flash。
+    - ECMAScript只是对实现这个规范描述的所有方面的一门语言的称呼。JavaScript实现了ECMAScript，而Adobe ActionScript同样也实现了ECMAScript。
+ - 文档对象模型（DOM）： 提供与网页内容交互的方法和接口
+        - DOM Level 1的目标是映射文档结构, DOM Level 2, DOM Level 3, DOM4
+        - 其他DOM
+            - 可伸缩矢量图（SVG, Scalable Vector Graphics）
+            - 数学标记语言（MathML, Mathematical Markup Language）
+            - 同步多媒体集成语言（SMIL, Synchronized Multimedia IntegrationLanguage）
+    - 文档对象模型（DOM, Document Object Model）是一个应用编程接口（API），用于在HTML中使用扩展的XML。
+    - DOM将整个页面抽象为一组分层节点。HTML或XML页面的每个组成部分都是一种节点，包含不同的数据。
+    - DOM并非只有js可以访问，只是对于浏览器来说，DOM就是使用ECMAScript实现的
+ - 浏览器对象模型（BOM）： 提供与浏览器交互的方法和接口
+    - IE3和Netscape Navigator 3提供了浏览器对象模型（BOM）API，用于支持访问和操作浏览器的窗口。使用BOM，开发者可以操控浏览器显示页面之外的部分。
+    - 唯一一个没有标准的部分
