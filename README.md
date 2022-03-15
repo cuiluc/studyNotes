@@ -1,14 +1,14 @@
 # web学习的点点滴滴
 ## JavaScript
-- [JS基础](./lib/js基础.md)
-
-## JavaScript实现
+- [JS简介](./lib/js简介.md)
+- [ECMAScript](./lib/js_ECMAScript.md)
+- [BOM](./lib/js_bom.md)
+- [JS其他](./lib/js_other.md)
 - [generator实现await函数](./static/generator实现await函数.js)
-- [函数式编程入门教程](http://www.ruanyifeng.com/blog/2017/02/fp-tutorial.html)
-    - [参考代码](./static/functionCode.js)
-    
+- [函数式组合子](./static/functionCode.js)
+
 ## DOM
-- [dom基础](./lib/dom基础.md)
+- [dom基础](./lib/js_dom.md)
 
 ## CSS
 - [CSS](./lib/css.md)

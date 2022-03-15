@@ -1,77 +1,5 @@
-# 注意
-- 传递函数 和 函数调用，传递的函数可以抽离，注意API传递的参数即可
-- window.performance.now() 不受系统时间影响
-- ()解释器先执行
-- 严格模式为容易出错的地方，增加了限制
-
-
-# script
-## script元素有八个属性
-- async：可选。表示应该立即开始下载脚本，但不能阻止其他页面动作，比如下载资源或等待其他脚本加载。只对外部脚本文件有效。
-- charset：可选。使用src属性指定的代码字符集。这个属性很少使用，因为大多数浏览器不在乎它的值。
-- crossorigin：可选。配置相关请求的CORS（跨源资源共享）设置。默认不使用CORS。crossorigin="anonymous"配置文件请求不必设置凭据标志。crossorigin="use-credentials"设置凭据标志，意味着出站请求会包含凭据。
-- defer：可选。表示脚本可以延迟到文档完全被解析和显示之后再执行。只对外部脚本文件有效。在IE7及更早的版本中，对行内脚本也可以指定这个属性。
-- integrity：可选。允许比对接收到的资源和指定的加密签名以验证子资源完整性（SRI, Subresource Integrity）。如果接收到的资源的签名与这个属性指定的签名不匹配，则页面会报错，脚本不会执行。这个属性可以用于确保内容分发网络（CDN, Content Delivery Network）不会提供恶意内容。
-- language：废弃。最初用于表示代码块中的脚本语言（如"JavaScript"、"JavaScript 1.2"或"VBScript"）。大多数浏览器都会忽略这个属性，不应该再使用它。
-- src：可选。表示包含要执行的代码的外部文件。
-- type：可选。代替language，表示代码块中脚本语言的内容类型（也称MIME类型）。按照惯例，这个值始终都是"text/javascript"，尽管"text/javascript"和"text/ecmascript"都已经废弃了。JavaScript文件的MIME类型通常是"application/x-javascript"，不过给type属性这个值有可能导致脚本被忽略。在非IE的浏览器中有效的其他值还有"application/javascript"和"application/ecmascript"。如果这个值是module，则代码会被当成ES6模块，而且只有这时候代码中才能出现import和export关键字。
-
-## 行内script
-- 从上到下解释，并且保存在解释器环境中
-- 代码被计算完成前，页面的其余内容不会被加载，也不会显示；
-- 在使用行内JavaScript代码时，要注意代码中不能出现字符串<*/script>会报错，需要转义 <\/script>
-- XHTML中编写规则更严格
-    - 必须制定type且值为 text/javascript
-    - XHTML 内部写法，不能出现小于号 会报错
-        - 方法一，必须把小于号写成 #lt;
-        - 方法二，注释抵消了非XHTML兼容浏览器中的问题，可以使用所有浏览器
-        ```
-        <script type="text/javascript">
-        //<![CDATA[
-            dosomething
-        //]]>
-        </script>
-        ```
-
-## 外部
-- 多个地方用一个js文件，可缓存使用
-- 在解释外部javascript文件的时候，页面也会阻塞，阻塞时间包括加载时间
-- async 属性，可以立即下载脚本，但不阻塞其他页面执行， 多个 async，不能保证执行顺序，区别于defer
-    - 只对外部有效
-    - 给脚本添加async属性的目的是告诉浏览器，不必等脚本下载和执行完后再加载页面，同样也不必等到该异步脚本下载和执行后再加载其他脚本
-- defer 立即下载，但延迟到文档完全解析和显示后再执行，规范要求多个defer要求按顺序执行
-    - 不过在实际当中，推迟执行的脚本不一定总会按顺序执行或者在DOMContentLoaded事件之前执行，因此最好只包含一个这样的脚本。
-    - 只对外部有效
-- 其他按照页面书写顺序解释
-- 在里面加行内代码会被忽略
-- 在XHTML文档中，可以忽略结束标签
-- src请求不一定可非要是js文件
-- 浏览器解析资源会向src的路径发送一个URL请求，这个请求不受浏览器同源策略限制，但仍然受父页面HTTP/HTTPS协议的限制，返回并被执行的JavaScript则受限制。
-- 在配置浏览器请求外部文件时，要重点考虑的一点是它们会占用多少带宽。在SPDY/HTTP2中，预请求的消耗已显著降低，以轻量、独立JavaScript组件形式向客户端送达脚本更具优势。浏览器支持 SPDY/HTTP2 ，就可以从同一个地方取一批文件，并逐个放到浏览器缓存
-## noscript
-- 以下两种会显示，noscript 标签中的内容，其他情况不会渲染其中的内容，noscript 标签中可包含其他标签，比如 p
-    - 浏览器不支持脚本
-    - 浏览器对脚本的支持被关闭
-## 注意
-- 需要动态加载的script外部脚本，比如在js中创建一个 script标签添加src属性。会影响性能，可以在文档头部， `<link rel="preload" href="想加载文件的路径">`
-- 以前会把script放到head标签中，也就意味着必须把所有JavaScript代码都下载、解析和解释完成后，才能开始渲染页面（页面在浏览器解析到<*body>的起始标签时开始渲染）。
-    - 对于需要很多JavaScript的页面，这会导致页面渲染的明显延迟，在此期间浏览器窗口完全空白
-    - 为解决这个问题，现代Web应用程序通常将所有JavaScript引用放在<*body>元素中的页面内容后面
-- 即使是字符串在 script 标签也不可以直接写， `</script>`，必须转义 **<\/script>** 才行
-- 一个script标签为一个宏任务, 先执行第一个宏任务，也就是第一个script标签，然后依次去塞，先进先出
-    - 执行顺序`同步代码执行结束 - 微任务执行结束 - 宏任务`    
-    - [例子](../static/excuScript.html)
-- 页面渲染时机
-    1. 第一次，dom树和css树加载完毕
-    2. 后面，在微任务执行结束, 去取宏任务的间隙
-- 文档模式
-    - 准标准模式通过过渡性文档类型（Transitional）和框架集文档类型（Frameset）来触发
-    - 标准模式：一般指准标准模式 或 标准模式
----
----
-
-# 语法基础
-## 变量
+# 一、语法基础
+## 1.1 变量
 - 第一个字符必须是字母/_/$
 - 变量声明
  - var
@@ -93,35 +21,20 @@
     - let/var混用重复声明会报错，不会受混用影响
     - 优先使用类型 const - let - var
 
-## 数据类型：共七种类型
-### typeof 操作数
-- 操作数是操作符而不是函数，所以不需要参数，但可以传
-- 使用
-    ```
-    let str = 'foo'
-    typeof str
-    typeof(str)
-    ```
-- 返回值为字符串
-- **注意**
-    - typeof null，返回值为 'object'， 因为*特殊值null认为是对空对象的引用*
-    - typeof 函数，返回值为 'function'，可以用来区分函数和其他对象
-    - 在Safari（直到Safari 5）和Chrome（直到Chrome 7）中用于检测正则表达式时，由于实现细节的原因，typeof也会返回"function"。目前是object
-        - ECMA-262规定，任何实现内部[[Call]]方法的对象都应该在typeof检测时返回"function"。因为上述浏览器中的正则表达式实现了这个方法，所以typeof对正则表达式也返回"function"。
-        - 在IE和Firefox中，typeof对正则表达式返回"object"。
-### 基础类型1 - undefined
+## 1.2 数据类型：共七种类型
+### 1.2.1 基础类型 - undefined
 - 声明为初始化变量时，默认 undefined
 - 一般，永远不用显式给某个变量设置 undefined
 - 主要用于比较
 - 对象空指针 和 未初始化变量的区别
 - 由null派生而来
-### 基础类型2 - Null
+### 1.2.2 基础类型 - Null
 - 表示一个空对象指针
 - 变量以后用来储存对象，建议用null初始化
-### 基础类型3 - Boolean
+### 1.2.3 基础类型 - Boolean
 - 转换其他值为布尔值 Boolean()，可以再任意类型数据上调用，且始终返回一个布尔值
 - 空字符串，0，NaN, null, undefined会被转化为false，其他会被转化为true
-### 基础类型4 - Number
+### 1.2.4 基础类型 - Number
 - Number类型使用IEEE754格式表示整数和浮点值（在某些语言中也叫双精度值）。
 - 不同的数值类型相应地也有不同的数值字面量格式。
     - 十进制，直接写
@@ -202,7 +115,7 @@
         let num5 = parseFloat("0908.5");     // 908.5
         let num6 = parseFloat("3.125e7");    // 31250000
         ```
-### 基础类型5 - String
+### 1.2.5 基础类型 - String
 - 表示零或多个16位Unicode字符序列
 - 可以用双引号（"）、单引号（'）或反引号（`）表示，使用哪种引号没有区别，开始结束一致即可
 - 如果字符串中包含双字节字符，那么length属性返回的值可能不是准确的字符数
@@ -265,7 +178,7 @@
         - String.raw\`\u00A9` -\u00A9
         - 但是 String.raw\`©` - ©
         - [例子](../static/rawStr.js)
-### 基础类型6 - Symbol()
+### 1.2.6 基础类型 - Symbol()
 - 符号是原始值，且符号实例是唯一、不可变的。创建唯一标记，不会冲突
 - 没有字面量语法，不能和 new 当做构造函数用，是为了避免创建符号包装对象，像使用Boolean、String或Number那样，它们都支持构造函数且可用于初始化包含原始值的包装对象
 - 可以传入一个字符串参数作为对符号的描述（description），可以通过这个字符串来调试代码。但是，这个字符串参数与符号定义或标识完全无关
@@ -396,7 +309,7 @@ console.log(fooSymbol == otherFooSymbol); // false
         }
         ```
 
-### 复杂数据类型 - Object
+### 1.2.7 复杂数据类型 - Object
 - 可以new Object()可以不加括号创建，但是不推荐
 - 派生其他对象的基类，Object上有的属性和方法，派生对象也有
 - 所有对象的基类，对象的行为不一定适合JavaScript其他对象，比如 BOM和DOM是宿主环境决定的，不受ECMA-262约束，所以可能不继承。
@@ -409,9 +322,24 @@ console.log(fooSymbol == otherFooSymbol); // false
     - toString()：返回对象的字符串表示。
     - valueOf()：返回对象对应的字符串、数值或布尔值表示。通常与toString()的返回值相同。
 
-## 操作符
+## 1.2 typeof 操作数
+- 操作数是操作符而不是函数，所以不需要参数，但可以传
+- 使用
+    ```
+    let str = 'foo'
+    typeof str
+    typeof(str)
+    ```
+- 返回值为字符串
+- **注意**
+    - typeof null，返回值为 'object'， 因为*特殊值null认为是对空对象的引用*
+    - typeof 函数，返回值为 'function'，可以用来区分函数和其他对象
+    - 在Safari（直到Safari 5）和Chrome（直到Chrome 7）中用于检测正则表达式时，由于实现细节的原因，typeof也会返回"function"。目前是object
+        - ECMA-262规定，任何实现内部[[Call]]方法的对象都应该在typeof检测时返回"function"。因为上述浏览器中的正则表达式实现了这个方法，所以typeof对正则表达式也返回"function"。
+        - 在IE和Firefox中，typeof对正则表达式返回"object"。
+## 1.3 操作符
 - 可以应用于各种值，不过在用给对象时，通常会调用valueOf()和/或toString()方法来取得可以计算的值。
-### 递增/递减操作符
+### 1.3.1 递增/递减操作符
 - 前缀递增或递减，会在语句被求值改变，俗称副作用
 - 前缀递增或递减 和 后缀递增或递减，可以作用于任何值，不限于整数——字符串、布尔值、浮点值，对象也可，最终都会转化为数值（数值包括NaN）。规则如下
     - 有效数值字符串，转为数值，再计算
@@ -420,7 +348,7 @@ console.log(fooSymbol == otherFooSymbol); // false
     - 布尔值true，1，再计算
     - 浮点数，加减1，浮点数会不精确，如let a = 1.1; --a; 0.10000000000000009
     - 对象，先valueOf()，应用上面规则，仍NaN的话；则再toString()，应用上面规则，不行，NaN
-### 一元加和减操作符
+### 1.3.2 一元加和减操作符
 - 主要用于数值运算，也可用于转类型
 - 加号
     - 对数值没有任何影响
@@ -428,7 +356,7 @@ console.log(fooSymbol == otherFooSymbol); // false
 - 减号
     - 数值变负数
     - 应用到非数值，和加号一样，转化后取负值
-### 位操作符
+### 1.3.3 位操作符
 - 用于数值的底层操作，即操作内存中表示数据的比特（位）
 - ECMAScript中的所有数值都以IEEE 754 64位格式存储。位操作并不直接用64位，先转成32位，再运算，再转成64位存储，但开发者只感知到32位。这个转换也导致副作用，即特殊值NaN和Infinity在位操作中都会被当成0处理
 - 有**符号整数**使用32位 = 前31位表示整数值 + 第32位表示数值的符号（0表示正，1表示负）。第32位称为符号位（sign bit），它的值决定了数值其余部分的格式
@@ -478,7 +406,7 @@ console.log(num2);   // -26
     - 将数值的所有32位都向右移
     - 正数和有符号右移一样
     - 负数，连带符号位一起左移
-### 布尔操作符
+### 1.3.4 布尔操作符
 1. 逻辑非 叹号（!），一个操作数
     - 始终返回布尔值
     - 先将操作数转换为布尔值，再取反
@@ -504,7 +432,7 @@ console.log(num2);   // -26
         - 两个都是undefined，则返回undefined。
     - 短路操作符，如果第一个值决定了结果true，不会再对第二个操作数求值
         - 可用于赋值默认值
-### 乘性操作符
+### 1.3.5 乘性操作符
 1. 乘法 *
     - 非数值操作数，会使用Number转型
     - 有NaN返回NaN
@@ -521,10 +449,10 @@ console.log(num2);   // -26
     - 有限值 % 0，NaN
     - Infinity % Infinity，NaN
     - 0 % 非，0
-### 指性操作符
+### 1.3.6 指性操作符
 - Math.pow(3, 2) === 3 ** 2 = 9
 - 指数赋值操作符 let a = 3; a **= 2，9
-### 加性操作符
+### 1.3.7 加性操作符
 1. 加法 + 
     - 都是数值，规则如下：
         - 如果有任一操作数是NaN，则返回NaN；
@@ -547,7 +475,7 @@ console.log(num2);   // -26
     - -0减-0，则返回+0。
     - 有任一操作数是字符串、布尔值、null或undefined，则Number()转换，再用前面的规则执行数学运算。如果转换结果是NaN，则减法计算的结果是NaN。
     - 有任一操作数是对象，valueOf()。如果是NaN，则减法计算的结果是NaN。如果对象没有valueOf()方法，则调用其toString()方法，然后再将得到的字符串转换为数值。
-### 关系操作符 < <= > >=
+### 1.3.8 关系操作符 < <= > >=
 - 均返回布尔值
 - 规则
     - 都是数值，数值比较。
@@ -558,7 +486,7 @@ console.log(num2);   // -26
     - 任何关系操作符在涉及比较NaN时都返回false
 - 大写字母的编码都小于小写字母的编码，最好转成小写比较
 - '23' < '3'，true，字符串; '23' < 3，false，数值
-### 相等操作符
+### 1.3.9 相等操作符
 - 等于和不等于会进行强制类型转化
     - 布尔转数值
     - 一字符串一数值，转成数值
@@ -567,22 +495,22 @@ console.log(num2);   // -26
     - null和undefined不能转为其他类型的值再比较
     - NaN与任何不相等
     - 指向同一对象相等，否则不
-### 赋值操作符 %= 、<<= 、>>=
-### 逗号操作符
+### 1.3.10 赋值操作符 %= 、<<= 、>>=
+### 1.3.11 逗号操作符
 - let num = (5, 1, 4, 8, 0); // num的值为0，返回表达式最后一个值
 
-## 语句，流控制
-- do-while 后测试语句，至少执行一次
-- for循环
+## 1.4 语句，流控制
+1. do-while 后测试语句，至少执行一次
+2. for循环
     - 初始化，条件表达式，循环后表达式都不是必须的
         - for(;;){} 无限循环
     - 第三个，循环后执行后执行的表达式，一般是 i++，循环体执行了才会执行；
-- for-in： key
+3. for-in： key
     - 枚举对象中**非符号键**属性
     - 循环遍历为null，undefined不执行循环体
-- for-of: value
+4. for-of: value
     - 遍历可迭代对象，如果不可迭代，会抛错
-- for-await-of
+5. for-await-of
     ```
     async function* asyncGenerator() {
         let i = 0;
@@ -600,7 +528,7 @@ console.log(num2);   // -26
     // 1
     // 2
     ```
-- 标签语句 label: statement
+6. 标签语句 label: statement
     - 可通过break或continue语句引用
         - break直接跳出到标签位置
         - continue 直接跳回标签位置
@@ -609,7 +537,7 @@ console.log(num2);   // -26
         console.log(i);
     }
     ```
-- with(expression) statement; 
+7. with(expression) statement; 
     - 将代码作用域设置为特定对象
     - 针对对一个对象反复操作的场景
     - statement先找局部变量，在搜索expression下同名属性
@@ -621,7 +549,7 @@ console.log(num2);   // -26
         let url = href;
     }
     ```
-- switch
+8. switch
     - break会跳出switch，不写 break 会继续匹配下一个条件，这时，最好加个注释，表示故意不写
     - value1可以是变量或表达式求值
     - 默认是对比 expression 和 value1，全等判断
@@ -639,17 +567,17 @@ console.log(num2);   // -26
         statement
     }
     ```
-- 函数
+9. 函数
     - 严格模式，函数名或者参数不能是eval或者arguments，两个参数不可同名，否则会报错，不执行
 
-# 变量、作用域与内存
-## 原始值和引用值
+# 二、 变量、作用域与内存
+## 2.1 原始值和引用值
 - 原始值： 六种原始值是按值引用的，不能有属性，但添加不会报错。原始值大小固定，因此保存在栈内存上
 - 引用值，保存在内存中，不允许直接访问内存位置，因此不能直接操作对象的内存空间。实际上操作的是引用（指向对应对象的指针），按引用访问；引用值是对象，存储在堆内存上。
 - 函数传参是按值传参的会复制，所以如果传参对象，函数内部的修改会反应到外部
 - 传参是会复制到一个局部变量（即一个命名参数），或者说复制到arguments一个槽位中
 - typeof只能区分原始值，引用至用 variable instanceof constructor(如Array)
-### 执行上下文
+### 2.1.1 执行上下文
 #### 基础
 - 变量或函数的上下文决定了它们可以访问哪些数据，以及它们的行为。
 - 每个上下文都有一个关联的**变量对象**（variable object），而这个上下文中定义的所有变量和函数都存在于这个对象上。
@@ -705,7 +633,7 @@ console.log(num2);   // -26
 - 局部找到后不会找到全局，除非用 window.xx
 - 标识符查找有代价。访问局部变量比访问全局变量要快，因为不用切换作用域。不过，JavaScript引擎在优化标识符查找上做了很多工作，将来这个差异可能就微不足道了。
 
-### 垃圾回收
+### 2.1.2 垃圾回收
 - JavaScript是使用垃圾回收的语言，也就是说执行环境负责在代码执行时管理内存。
 - 自动内存管理实现内存分配和闲置资源回收
 - 周期性检查不使用的变量，**周期性**（或者说在代码执行过程中某个预定的收集时间）就会自动运行
@@ -767,7 +695,7 @@ console.log(num2);   // -26
 ---
 ---
 
-# 基本引用类型 
+# 三、基本引用类型 
 - 类 ≠ 引用类型
 ## new Date()
 - 不传值，当前时间；
@@ -1125,7 +1053,7 @@ window.crypto.getRandomValues(array);
 ```
 ---
 ---
-# 集合引用类型
+# 四、集合引用类型
 - 表达式上下文（expression context）指的是期待返回值的上下文
 - 语句上下文（statement context）
 ## Object
@@ -1770,7 +1698,7 @@ wm.add({});
 ---
 ---
 
-# 迭代器和生成器
+# 五、迭代器和生成器
 - “迭代”的意思是**按照顺序**反复**多次**执行一段程序，通常会有**明确的终止条件**
 ## 迭代器模式
 - 即有些实现了**正式的Iterable接口**“**可迭代对象**”（iterable），而且可以**通过迭代器Iterator消费**。
@@ -1868,7 +1796,7 @@ iter.next(); // { done: true, value: undefined }
     g.throw('foo')
     g.next() // {done: false, value: 3}
     ```
-# 代理与反射
+# 六、代理与反射
 - 提供了拦截并向基本操作嵌入额外行为的能力。 目标对象 ---- 处理程序 ---> （抽象的）代理对象
 - 无可替代，不存在后备代码
 ## 代理基础
@@ -2303,7 +2231,7 @@ new proxy;
 5. 构造函数作为目标对象，在construct中对参数进行验证
 6. 类作为目标对象，在construct中可收集实例，在set中可发送消息
 
-# 函数
+# 七、函数
 ## 函数声明
 ### 函数声明 
 - function xx(){} 最后没有分号
@@ -2642,7 +2570,7 @@ for (var i = 0; i < divs.length; ++i) {
 - 私有变量包括函数参数、局部变量，以及函数内部定义的其他函数。
     - 特权方法（privileged method）是能够访问函数私有变量（及私有函数）的公有方法
 - 特权方法可以使用 构造函数（每个实例都会重建方法） 或 原型模式（私有变量和私有函数由实例共享） 通过自定义类型中实现，也可以使用 模块模式 或 模块增强模式在单例对象（只增强单例） 上实现。
-# Promise
+# 八、Promise
 1. new Promise() 不可以，必须提供一个处理函数，哪怕是空函数 new Promise(()=>{})
 2. Promise 的状态一旦改变，后面都会改变
 ## Promise 可以直接进入落定状态
@@ -2856,206 +2784,3 @@ foo()
 ```
 ---
 ---
-
-# BOM
-## window
-- window两个身份，Global对象 + 浏览器窗口的 Javascript 接口
-- let 和 const 声明的变量不会挂在 window 上，var 会
-- 如下
-```
-// b 未声明，会报错
-let a = b
-// 这种不会报错
-let a = window.b
-```
-- window.top / window.self 始终指向最上层，即window
-- 最上层(window)的parent还是window
-- window.screeLeft 和 window.screeTop 浏览器窗口，相对于电脑屏幕的位置，返回为css像素
-- moveTo && moveBy， 必须用 window.open 打开新窗口，并用参数接收
-```
-myWindow = window.open('', '', 'width=200,height=100');
-myWindow.document.write("<p>这是我的窗口</p>");
-// 必须是window.open打开的窗口，移动到指定位置，x, y
-myWindow.moveTo(0, 0);
-myWindow.focus();
-// 向两个方向移动的距离
-myWindow.moveBy(0, 0);
-```
-- 像素比 window.devicePixelRatio 物理像素与逻辑像素的缩放系数
-比如手机物理像素 1920\*1080但像素点特别小，需要降低为比较低的逻辑像素点，如 640\*320  window.devicePixelRatio就是3， 12css像素实际上是36像素物理像素
-- css像素单位
-    - em 当前元素的fontSize大小的倍数
-    - rem 根元素的fontSize大小的倍数
-    - vw/vh
-- 窗口大小
-1. outerHeight / outerWidth 返回浏览器当前自身大小，缩小浏览器值会变化，在 frame 用一样
-2. 浏览器窗口中页面视口大小
-    - innerHeight / innerWidth 是不是一个数值
-    - 不是数值
-        - document.compatMode === "CSS1Compat" 检查页面处于标准模式
-            - 是， document.documentElement.clientHeight / document.documentElement.clientWeight， 手机缩放时候，值会变
-            - 不是， document.body.clientHeight / document.body.clientWeight， 缩放时候，值会变
-3. resizeBy && resizeTo, 必须要 myWinsow =  window.open
-    - myWinsow.resizeTo(100, 50) 缩放到 100 * 50
-    - myWinsow.resizeBy(50, 50) 缩放到 150 * 100 累加
-- 视口位置
-1. 视口滚动距离 window.pageXOffset / window.scrollX 和 window.pageYOffset / window.scrollY
-2. 滚动
-    - window.scrollBy(x, y) 滚动相应距离
-    - window.scrollTo(x, y) 滚动到相应位置
-    - window.scroll(x, y) 滚动
-    - 以上接受一个ScrollOption字典，{left: 100, top: 100, behavior: 'auto'/'smooth'}} 
-        - auto 正常滚动
-        - smooth 平滑混动
-- window.open() 
-    - 四个参数
-        1. 目标地址URL
-        2. 目标窗口
-            - 如果是窗口，或者窗格（frame）的名字，就在对应窗口打开链接
-            - _self / _parent / _top / _blank
-            - 不是新窗口，就新打开
-        3. 特性字符串
-            - 指定新窗口的配置，不传用默认的；
-            - 必须是新窗口，才生效
-            - 不可包含字符串，可配置 height/width/resizeable 等
-        4. 表示新窗口在浏览器历史记录中是否替代当前加载页面的布尔值，一般不传这个参数，只在不打开新窗口时才使用
-    - 返回一个对新窗口的引用，即新窗口的window
-- window.close() **只能**用来关闭window.open打开的窗口
-    - myWindow.close() 后引用虽然还在，但也**只能**用来检查 myWindow.closed 了， 此时为 true
-- myWindow.opener 指向打开它的窗口 myWindow.opener  === window
-    - myWindow.opener = null; 会切开与打开它的标签页的通信，因此可在独立进程中运行。不可逆
-- window不会记录自己打开的窗口，需要自己记录
-- 网页加载过程中调用 window.open()没有用，反而可能导致显示错误
-- 浏览器可能会屏蔽弹窗
-let blocked = false;
-```
-try {
-    // 两种可能情况
-    // 1- newWin返回为null
-    let newWin = window.open('www.baidu.com', '_blank');
-    if (newWin == null) {
-        blocked = true
-    }
-} catch (e) {
-    // 2- 调用window.open报错进入catch
-    blocked = true;
-}
-// blocked 说明被屏蔽
-```
-
-### 定时器三个参数
-- setTimeout(code, delay, args)
-    - 第一个参数可以是一个方法，或者是 可执行的字符串
-    - 第二个参数，毫秒数；告诉引擎在delay毫秒后，将任务添加到任务队列，如果队列空，直接执行；不为空，则需要等待；1s === 1000ms
-```
-function fn(a, b) {
-    console.log(arguments)
-}
-// delay 之后的其余参数作为第一个方法的参数
-setTimeout(fn, 5000, 'a', 'b', 'c', 'd')
-```
-- clearTimeout 执行是幂等的
-- 开发环境建议用 setTimeout 实现 setInterval, 因为 setInterval 没办法保证一个任务结束到下一个任务开始之间的时间间隔，只是按时添加新任务，不管执行
-
-### 系统对话框
-- alert()/confirm()/prompt() 系统对话框
-    - 与显示网页无关
-    - 不包含 html；无法设置 css，完全由操作系统和浏览器确定
-    - 同步，显示时代码会停止执行
-- alert 接受一个参数，不是字符串，调用 toString
-- confirm() 会返回一个布尔值，true-确定，false-取消
-- prompt()
-    - 两个参数，一个问题，一个默认值（可以为空）
-    - 确定-返回用户输入，取消-返回null
-
-- 异步对话框，楼兰器对话框计数器不会涉及，用户设置禁用也没用
-    - window.print() 显示打印对话框，异步
-    - window.find() 显示查找对话框，异步
-
-## window.location ===  document.location; 
-- 保存了文档信息，以及URL信息
-- location.search中要用decodeURIComponent解码, 如下是语法糖，**URLSearchParams**
-```
-let str = '?a=1&b=2';
-let obj = new URLSearchParams(str);
-// 检测
-obj.has('a'); // true
-// 获取
-obj.get('a'); // 1
-// 设置
-obj.set('c', 3);
-obj.toString(); // a=1&b=2&c=3
-// 删除
-obj.delete('b');
-obj.toString(); // a=1&c=3
-// 支持for..of obj
-```
-- location.assign('http://www.baidu.com')
-    - 跳转，同时在浏览器历史记录中增加一条记录
-    - 以下两种会隐式调用，location.assign('http://www.baidu.com')
-        - window.location = 'http://www.baidu.com'
-        - location.href = 'http://www.baidu.com', 最常见
-- location. hash / search / hostname / pathname /port = xx，也会修改当前的URL
-    - location.hash = '**#**123'
-    - location.search = '**?**a=123'
-    - 其余类似
-> 以上除了hash以外，都会重新加载URL, hash修改仍然会在浏览器历史记录增加一份记录
-- 如果不想增加历史记录，可 location.replace('http://www.baidu.com')
-- location.reload()，可重新加载当前页面
-    - 不传参，重新加载，以最有效方式加载，可能从缓存加载
-    - location.reload(true) 重新加载，从服务器加载
-    - reload 之后的代码可能执行，也可能不执行，取决于网络延迟和系统资源等因素。最后做最后一行代码   
-## window.navigator 客户端标识浏览器的标准。只要浏览器启用Javascript就有
-- 通常用于确定浏览器类型
-- window.navigator.appName 浏览器全名
-- window.navigator.appVersion 浏览器版本，与实际一般不一样
-- window.navigator.plugins 可用于检测是否安装插件
-    - 返回数组
-    - 数组每一项包括 
-        - name - 插件名称
-        - description - 插件介绍
-        - filename - 插件的文件名
-        - length - 当前插件处理的MIME类型数量
-        - 还有可以访问 MimeType
-    - 旧IE，检测插件，必须实例化插件， 并且需要知道插件的COM标识符, try new ActiveXObject(COM标识符) 不报错，即有该插件
-    - window.navigator.plugins.refresh() 刷新 plugins 信息
-        - 传参 true, 包含插件的页面都会重新加载
-        - 不传，只有 plugins 内容
-- navigator.registerProtocolHandler('mailto', 'http://www.somemailclient.com?cmd=%s', 'appleOne')
-    - 注册处理程序，如上是把一个web应用程序注册为默认邮件客户端，这样邮件地址就可以通过指定web应用程序打开
-    - 第一个参数，要处理的协议， mailto / ftp
-    - 第二个参数，处理该协议的URL, %s 表示原始请求
-    - 第三个参数，应用名称
-- navigator.userAgent 获取浏览器独有信息，可用来判断使用的浏览器，服务器端用比较可靠，客户端一般认为是不安全的
-    - 只读，直接修改不生效，可以用`window.navigator.__defineGetter__('userAgent', ()=>'foo')`伪造，如果不相信用户代理，那就用能力检测浏览器
-    - 历史遗留问题，添加足够的信息，让服务器知道当前浏览器与其他浏览器兼容
-    - 用户信息比本身什么浏览器更重要，一般用此判断浏览器
-    - 可以通过一些库解析该字符串，来获取环境信息，如浏览器版本，操作系统等信息
-- navigator.geolocation暴露了一个API，可以让脚本感知当前设备地理信息，不过精度和设备配置有关系
-    - 当前地理信息 `navigator.geolocation.getCurrentPosition(po => console.log(po))`
-- navigator.onLine 检查浏览器是否联网，可window上的事件，online/offline可以检测事件
-
-## window.screen 客户端能力信息
-- screen.orientation 移动端返回屏幕相对于默认情况的角度
-
-## window.history 导航信息，不会暴露信息，但是可前进或后退
-- history.go(param)
-    - param 为数值，正数前进， 负数后退， 0 刷新
-    - 旧版本浏览器，param 为字符串，则导航到最近的包含该字符串的位置，没有，则什么都不做
-- history.back() 回退一步
-- history.forward() 前进一步
-- history.length 历史记录数量
-    - history.length === 1，说明是用户窗口第一个页面
-- hashchange 事件会在页面URL的散列变化触发
-- 以上都会刷新页面，**改变URL而不会重新加载页面**
-    - 历史记录管理
-    - history.pushState()
-        1. param1，state对象（应包含正确初始化页面状态所必须要的信息，一个对象，为防止滥用，大小限制在 500kb - 1mb以内）
-        2. param2，新状态标题（当前浏览器还未实现，可传空字符串）
-        3. param3，(可选的)相对URL，有历史记录，地址栏会更新的地址(+ '/相URL')，不会向服务器发送请求
-        - 每个假的url都应该对象服务器一个真实的，不然刷新会报错，框架需要配置解决这个问题
-    - history.replaceState(state对象, 新状态标题) 不添加历史记录，只会覆盖当前状态
-    - window.addEventListener 可以添加一个 popstate 事件，后退时触发，事件对象有 state 属性
-        - 最初页面 state 为 null
-        - **需要**自己将页面状态重置为 event.state 的状态
-    - history.state 获取当前的状态对象
