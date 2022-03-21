@@ -1053,6 +1053,7 @@ window.crypto.getRandomValues(array);
 ```
 ---
 ---
+
 # 四、集合引用类型
 - 表达式上下文（expression context）指的是期待返回值的上下文
 - 语句上下文（statement context）
@@ -1796,6 +1797,7 @@ iter.next(); // { done: true, value: undefined }
     g.throw('foo')
     g.next() // {done: false, value: 3}
     ```
+
 # 六、代理与反射
 - 提供了拦截并向基本操作嵌入额外行为的能力。 目标对象 ---- 处理程序 ---> （抽象的）代理对象
 - 无可替代，不存在后备代码
@@ -2570,6 +2572,7 @@ for (var i = 0; i < divs.length; ++i) {
 - 私有变量包括函数参数、局部变量，以及函数内部定义的其他函数。
     - 特权方法（privileged method）是能够访问函数私有变量（及私有函数）的公有方法
 - 特权方法可以使用 构造函数（每个实例都会重建方法） 或 原型模式（私有变量和私有函数由实例共享） 通过自定义类型中实现，也可以使用 模块模式 或 模块增强模式在单例对象（只增强单例） 上实现。
+
 # 八、Promise
 1. new Promise() 不可以，必须提供一个处理函数，哪怕是空函数 new Promise(()=>{})
 2. Promise 的状态一旦改变，后面都会改变
