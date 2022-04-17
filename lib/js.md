@@ -1,0 +1,2 @@
+- window.performance.now() 不受系统时间影响
+- ()解释器先执行

@@ -1,5 +1,4 @@
-# git
-## github中fork了别人的分支，如何更新
+## github中fork了别人的分支，关联
 1. 将自己的代码 clone下来
 2. 执行下面操作
 ```
